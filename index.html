@@ -9,15 +9,23 @@
 <style>
   *{box-sizing:border-box;direction:rtl}
   html,body{margin:0;padding:0;height:100%;font-family:'Vazirmatn',sans-serif;background:#0b1220;overflow:hidden;color:#fff}
-  #map{height:100%;width:100%;filter:brightness(0.9) saturate(1.2)}
+  #map{height:100%;width:100%;filter:brightness(0.85) saturate(1.2)}
   #overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background:radial-gradient(circle at center,rgba(255,255,255,0.05),transparent 80%);opacity:0.25;}
   .hud{position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:10;}
-  .hud-item{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);padding:10px 18px;border-radius:16px;backdrop-filter:blur(8px);box-shadow:0 2px 10px rgba(0,0,0,0.4);font-size:15px;}
+  .hud-item{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);padding:10px 18px;border-radius:16px;backdrop-filter:blur(8px);box-shadow:0 2px 10px rgba(0,0,0,0.4);font-size:15px;transition:all .3s ease;}
   .hud-item span{color:#00e6b8;font-weight:bold;font-size:17px;}
+  .hud-item:hover{transform:scale(1.05);background:rgba(255,255,255,0.15)}
   .bottom-actions{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:16px;z-index:10;}
-  .floating-btn{background:linear-gradient(135deg,#00e6b8,#0075ff);color:#fff;padding:14px 26px;border-radius:40px;font-size:16px;font-weight:600;border:none;cursor:pointer;box-shadow:0 6px 25px rgba(0,230,184,0.4);transition:all .3s ease;}
-  .floating-btn:hover{transform:scale(1.05);}
+  .floating-btn{background:linear-gradient(135deg,#00e6b8,#0075ff);color:#fff;padding:14px 26px;border-radius:40px;font-size:16px;font-weight:600;border:none;cursor:pointer;box-shadow:0 6px 25px rgba(0,230,184,0.4);transition:all .3s ease;min-width:140px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;}
+  .floating-btn:hover{transform:scale(1.05);box-shadow:0 8px 30px rgba(0,230,184,0.6);}
   .btn-disabled{opacity:0.45;pointer-events:none;filter:grayscale(0.3);}
+  .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:999;}
+  .card{background:rgba(15,22,40,0.9);border-radius:20px;padding:30px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.05);backdrop-filter:blur(10px);animation:pop .4s ease;max-width:350px;}
+  @keyframes pop{0%{transform:scale(0.7);opacity:0}100%{transform:scale(1);opacity:1}}
+  .card h2{margin-bottom:10px;color:#00e6b8}
+  .card p{color:#ccc;margin-bottom:20px}
+  .card button{background:linear-gradient(135deg,#00e6b8,#0075ff);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-size:15px;cursor:pointer}
+  .card button:hover{opacity:.9}
   .reward-marker {
     width: 24px; height: 24px;
     background: radial-gradient(circle at 50% 30%, #ffd700, #ffaa00);
@@ -28,11 +36,14 @@
   }
   @keyframes pulseReward {from{transform:scale(1);}to{transform:scale(1.3);}}
   .user-marker {width:18px;height:18px;background:radial-gradient(circle,#00e6b8 30%,#0075ff 70%);border-radius:50%;box-shadow:0 0 15px 6px rgba(0,230,184,0.5);animation:pulse 2s infinite alternate;border:2px solid #fff;}
-  @keyframes pulse{from{transform: scale(1);}to{transform: scale(1.3);}}
+  @keyframes pulse{from{transform: scale(1); box-shadow:0 0 15px 6px rgba(0,230,184,0.5);}to{transform: scale(1.3); box-shadow:0 0 25px 12px rgba(0,230,184,0.8);}}
+
+  /* صفحه لاگین */
   #loginScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:#0b1220;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10000;}
   #loginScreen h1{color:#00e6b8;margin-bottom:20px;}
   #loginScreen input{padding:10px 15px;border-radius:8px;border:none;outline:none;font-size:16px;margin-bottom:10px;width:200px;text-align:center;}
   #loginScreen button{background:linear-gradient(135deg,#00e6b8,#0075ff);border:none;padding:10px 20px;border-radius:8px;color:#fff;font-weight:bold;cursor:pointer;}
+  #loginScreen p{color:#ff7070;margin-top:10px;}
 </style>
 </head>
 <body>
@@ -40,7 +51,7 @@
   <h1>🔐 ورود به کلاس نهم ج</h1>
   <input type="password" id="passwordInput" placeholder="رمز ورود">
   <button onclick="checkPassword()">ورود</button>
-  <p id="errorMsg" style="display:none;color:#ff7070;">رمز اشتباه است!</p>
+  <p id="errorMsg" style="display:none;">رمز اشتباه است!</p>
 </div>
 
 <div id="map" style="display:none;"></div>
@@ -56,6 +67,22 @@
   <a id="withdrawBtn" class="floating-btn btn-disabled" href="#" target="_blank">Withdraw</a>
 </div>
 
+<div id="modal" class="modal">
+  <div class="card">
+    <h2>🎉 قفل باز شد!</h2>
+    <p>آفرین! یک قفل دیگر باز کردی.</p>
+    <button id="closeModal">ادامه</button>
+  </div>
+</div>
+
+<div id="winModal" class="modal">
+  <div class="card">
+    <h2>🏆 تبریک!</h2>
+    <p>تو تونستی ۱۰ قفل رو باز کنی!<br>هدیه‌ات منتظرته 💎</p>
+    <button onclick="window.location.reload()">شروع دوباره</button>
+  </div>
+</div>
+
 <script>
 function checkPassword(){
   const pass=document.getElementById("passwordInput").value.trim();
@@ -63,14 +90,19 @@ function checkPassword(){
     document.getElementById("loginScreen").style.display="none";
     document.querySelectorAll("#map,#overlay,.hud,.bottom-actions").forEach(e=>e.style.display="");
     initMap();
-  }else document.getElementById("errorMsg").style.display="block";
+  }else{
+    document.getElementById("errorMsg").style.display="block";
+  }
 }
 
 function initMap(){
-  const map=L.map('map').setView([32,53],6);
-  L.tileLayer(`https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=wtyVynedWDK2q9aMHfGI`).addTo(map);
+  const map=L.map('map').setView([32.0,53.0],6);
+  L.tileLayer(`https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=wtyVynedWDK2q9aMHfGI`,{
+    attribution:'&copy; <a href="https://www.maptiler.com/">MapTiler</a> & <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+  }).addTo(map);
 
-  let markers=[], unlockedIds=[], userMarker;
+  let markers=[], unlockedIds=[], userMarker,userCircle;
+  const withdrawBtn=document.getElementById("withdrawBtn");
 
   function distance(lat1,lon1,lat2,lon2){
     const R=6371e3;
@@ -80,25 +112,20 @@ function initMap(){
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
   }
 
-  // محاسبه مختصات جدید با شعاع و زاویه
-  function computeOffset(lat, lng, distanceMeters, bearingDegrees){
-    const R=6371000;
-    const δ=distanceMeters/R;
-    const θ=bearingDegrees*Math.PI/180;
-    const φ1=lat*Math.PI/180, λ1=lng*Math.PI/180;
-    const φ2=Math.asin(Math.sin(φ1)*Math.cos(δ)+Math.cos(φ1)*Math.sin(δ)*Math.cos(θ));
-    const λ2=λ1+Math.atan2(Math.sin(θ)*Math.sin(δ)*Math.cos(φ1), Math.cos(δ)-Math.sin(φ1)*Math.sin(φ2));
-    return {lat:φ2*180/Math.PI, lng:λ2*180/Math.PI};
+  function getRandomDistanceLatLng(centerLat,centerLng,minM,maxM){
+    const R=6371000; 
+    const d=Math.random()*(maxM-minM)+minM;
+    const brng=Math.random()*2*Math.PI;
+    const newLat=centerLat+(d/R)*(180/Math.PI)*Math.cos(brng);
+    const newLng=centerLng+(d/R)*(180/Math.PI)/Math.cos(centerLat*Math.PI/180)*Math.sin(brng);
+    return {lat:newLat,lng:newLng};
   }
 
   function createRewards(n,center){
     markers.forEach(m=>m.remove?.());
     markers=[];
-    const angleStep=360/n;
     for(let i=0;i<n;i++){
-      const bearing=i*angleStep + Math.random()*5; // زاویه با کمی تصادف
-      const dist=1000 + Math.random()*1000; // بین ۱ تا ۲ کیلومتر
-      const pos=computeOffset(center.lat, center.lng, dist, bearing);
+      const pos=getRandomDistanceLatLng(center.lat,center.lng,30,100);
       const id=`${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
       const marker=L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:'reward-marker'})});
       marker.id=id;
@@ -106,15 +133,20 @@ function initMap(){
       markers.push(marker);
     }
     document.getElementById("total").innerText=n;
+    document.getElementById("count").innerText=unlockedIds.length;
   }
 
-  function updateUser(pos){
+  function updateUserLocation(pos){
     const lat=pos.coords.latitude, lng=pos.coords.longitude;
     if(!userMarker){
       userMarker=L.marker([lat,lng],{icon:L.divIcon({className:'user-marker'})}).addTo(map);
-      map.setView([lat,lng],15);
+      userCircle=L.circle([lat,lng],{radius:50,color:'#00e6b8',fillColor:'#00e6b8',fillOpacity:0.1}).addTo(map);
+      map.setView([lat,lng],17);
       createRewards(40,{lat,lng});
-    } else userMarker.setLatLng([lat,lng]);
+    } else {
+      userMarker.setLatLng([lat,lng]);
+      userCircle.setLatLng([lat,lng]);
+    }
 
     markers.forEach(marker=>{
       if(!unlockedIds.includes(marker.id)){
@@ -123,21 +155,32 @@ function initMap(){
           marker.remove();
           unlockedIds.push(marker.id);
           document.getElementById("count").innerText=unlockedIds.length;
+          showModal("#modal");
+          if(unlockedIds.length>=10)setTimeout(()=>showModal("#winModal"),700);
         }
       }
     });
   }
 
-  document.getElementById("resetBtn").onclick=()=>{
-    if(userMarker)map.setView(userMarker.getLatLng(),15,{animate:true});
+  function showModal(sel){
+    const el=document.querySelector(sel);
+    el.style.display='flex';
+    el.querySelector('button').addEventListener('click',()=>el.style.display='none',{once:true});
   }
 
+  document.getElementById("resetBtn").addEventListener("click",()=>{
+    if(userMarker){
+      const latlng=userMarker.getLatLng();
+      map.setView(latlng,17,{animate:true});
+    }
+  });
+
   if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(p=>{
-      updateUser(p);
-      navigator.geolocation.watchPosition(updateUser,()=>{}, {enableHighAccuracy:true});
+    navigator.geolocation.getCurrentPosition(pos=>{
+      updateUserLocation(pos);
+      navigator.geolocation.watchPosition(updateUserLocation,()=>{}, {enableHighAccuracy:true});
     });
-  }
+  } else {alert("مرورگر شما از موقعیت‌یابی پشتیبانی نمی‌کند.");}
 }
 </script>
 </body>
