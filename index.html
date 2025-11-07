@@ -37,8 +37,6 @@
   @keyframes pulseReward {from{transform:scale(1);}to{transform:scale(1.3);}}
   .user-marker {width:18px;height:18px;background:radial-gradient(circle,#00e6b8 30%,#0075ff 70%);border-radius:50%;box-shadow:0 0 15px 6px rgba(0,230,184,0.5);animation:pulse 2s infinite alternate;border:2px solid #fff;}
   @keyframes pulse{from{transform: scale(1); box-shadow:0 0 15px 6px rgba(0,230,184,0.5);}to{transform: scale(1.3); box-shadow:0 0 25px 12px rgba(0,230,184,0.8);}}
-
-  /* صفحه لاگین */
   #loginScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:#0b1220;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10000;}
   #loginScreen h1{color:#00e6b8;margin-bottom:20px;}
   #loginScreen input{padding:10px 15px;border-radius:8px;border:none;outline:none;font-size:16px;margin-bottom:10px;width:200px;text-align:center;}
@@ -125,7 +123,7 @@ function initMap(){
     markers.forEach(m=>m.remove?.());
     markers=[];
     for(let i=0;i<n;i++){
-      const pos=getRandomDistanceLatLng(center.lat,center.lng,30,100);
+      const pos=getRandomDistanceLatLng(center.lat,center.lng,1000,2000); // 👈 فاصله بین ۱ تا ۲ کیلومتر
       const id=`${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
       const marker=L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:'reward-marker'})});
       marker.id=id;
@@ -141,7 +139,7 @@ function initMap(){
     if(!userMarker){
       userMarker=L.marker([lat,lng],{icon:L.divIcon({className:'user-marker'})}).addTo(map);
       userCircle=L.circle([lat,lng],{radius:50,color:'#00e6b8',fillColor:'#00e6b8',fillOpacity:0.1}).addTo(map);
-      map.setView([lat,lng],17);
+      map.setView([lat,lng],15);
       createRewards(40,{lat,lng});
     } else {
       userMarker.setLatLng([lat,lng]);
@@ -171,7 +169,7 @@ function initMap(){
   document.getElementById("resetBtn").addEventListener("click",()=>{
     if(userMarker){
       const latlng=userMarker.getLatLng();
-      map.setView(latlng,17,{animate:true});
+      map.setView(latlng,15,{animate:true});
     }
   });
 
