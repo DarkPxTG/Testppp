@@ -7,41 +7,37 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-*{box-sizing:border-box;direction:rtl}
-html,body{margin:0;padding:0;height:100%;font-family:'Vazirmatn',sans-serif;background:#0b1220;overflow:hidden;color:#fff}
-#map{height:100%;width:100%;filter:brightness(0.85) saturate(1.2)}
-#overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background:radial-gradient(circle at center,rgba(255,255,255,0.05),transparent 80%);opacity:0.25}
-.hud{position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:10}
-.hud-item{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);padding:10px 18px;border-radius:16px;backdrop-filter:blur(8px);box-shadow:0 2px 10px rgba(0,0,0,0.4);font-size:15px;transition:all .3s ease}
-.hud-item span{color:#00e6b8;font-weight:bold;font-size:17px}
-.hud-item:hover{transform:scale(1.05);background:rgba(255,255,255,0.15)}
-
-.bottom-actions{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:16px;z-index:10}
-.floating-btn{background:linear-gradient(135deg,#00e6b8,#0075ff);color:#fff;padding:14px 26px;border-radius:40px;font-size:16px;font-weight:600;border:none;cursor:pointer;box-shadow:0 6px 25px rgba(0,230,184,0.4);transition:all .3s ease;min-width:140px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
-.floating-btn:hover{transform:scale(1.05);box-shadow:0 8px 30px rgba(0,230,184,0.6)}
-.btn-disabled{opacity:0.45;pointer-events:none;filter:grayscale(0.3)}
-
-.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:999}
-.card{background:rgba(15,22,40,0.9);border-radius:20px;padding:30px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.05);backdrop-filter:blur(10px);animation:pop .4s ease;max-width:350px}
-@keyframes pop{0%{transform:scale(0.7);opacity:0}100%{transform:scale(1);opacity:1}}
-.card h2{margin-bottom:10px;color:#00e6b8}
-.card p{color:#ccc;margin-bottom:20px}
-.card button{background:linear-gradient(135deg,#00e6b8,#0075ff);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-size:15px;cursor:pointer}
-.card button:hover{opacity:.9}
-
-.user-marker{width:18px;height:18px;background:radial-gradient(circle,#00e6b8 30%,#0075ff 70%);border-radius:50%;box-shadow:0 0 15px 6px rgba(0,230,184,0.5);animation:pulse 2s infinite alternate;border:2px solid #fff}
-@keyframes pulse{from{transform:scale(1);box-shadow:0 0 15px 6px rgba(0,230,184,0.5);}to{transform:scale(1.3);box-shadow:0 0 25px 12px rgba(0,230,184,0.8);}}
-
-.glow-prize{
-  width:24px;height:24px;border-radius:50%;
-  background: radial-gradient(circle at 30% 30%, #ffd27a, #ffaa00);
-  box-shadow:0 0 15px 4px #ffd27a,0 0 30px 10px rgba(255,210,122,0.6);
-  animation:prizePulse 1.8s infinite alternate;
-}
-@keyframes prizePulse{
-  from{transform:scale(1);opacity:1;}
-  to{transform:scale(1.3);opacity:0.9;}
-}
+  *{box-sizing:border-box;direction:rtl}
+  html,body{margin:0;padding:0;height:100%;font-family:'Vazirmatn',sans-serif;background:#0b1220;overflow:hidden;color:#fff}
+  #map{height:100%;width:100%;filter:brightness(0.85) saturate(1.2)}
+  #overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background:radial-gradient(circle at center,rgba(255,255,255,0.05),transparent 80%);opacity:0.25;}
+  .hud{position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:10;}
+  .hud-item{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);padding:10px 18px;border-radius:16px;backdrop-filter:blur(8px);box-shadow:0 2px 10px rgba(0,0,0,0.4);font-size:15px;transition:all .3s ease;}
+  .hud-item span{color:#00e6b8;font-weight:bold;font-size:17px;}
+  .hud-item:hover{transform:scale(1.05);background:rgba(255,255,255,0.15)}
+  .bottom-actions{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:16px;z-index:10;}
+  .floating-btn{background:linear-gradient(135deg,#00e6b8,#0075ff);color:#fff;padding:14px 26px;border-radius:40px;font-size:16px;font-weight:600;border:none;cursor:pointer;box-shadow:0 6px 25px rgba(0,230,184,0.4);transition:all .3s ease;min-width:140px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;}
+  .floating-btn:hover{transform:scale(1.05);box-shadow:0 8px 30px rgba(0,230,184,0.6);}
+  .btn-disabled{opacity:0.45;pointer-events:none;filter:grayscale(0.3);}
+  .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:999;}
+  .card{background:rgba(15,22,40,0.9);border-radius:20px;padding:30px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.05);backdrop-filter:blur(10px);animation:pop .4s ease;max-width:350px;}
+  @keyframes pop{0%{transform:scale(0.7);opacity:0}100%{transform:scale(1);opacity:1}}
+  .card h2{margin-bottom:10px;color:#00e6b8}
+  .card p{color:#ccc;margin-bottom:20px}
+  .card button{background:linear-gradient(135deg,#00e6b8,#0075ff);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-size:15px;cursor:pointer}
+  .card button:hover{opacity:.9}
+  /* جایزه حرفه‌ای */
+  .reward-marker {
+    width: 24px; height: 24px;
+    background: radial-gradient(circle at 50% 30%, #ffd700, #ffaa00);
+    border-radius: 50%;
+    box-shadow: 0 0 12px #ffd700, 0 0 20px #ffb84d;
+    animation: pulseReward 1.8s infinite alternate;
+    border: 2px solid #fff;
+  }
+  @keyframes pulseReward {from{transform:scale(1);}to{transform:scale(1.3);}}
+  .user-marker {width:18px;height:18px;background:radial-gradient(circle,#00e6b8 30%,#0075ff 70%);border-radius:50%;box-shadow:0 0 15px 6px rgba(0,230,184,0.5);animation:pulse 2s infinite alternate;border:2px solid #fff;}
+  @keyframes pulse{from{transform: scale(1); box-shadow:0 0 15px 6px rgba(0,230,184,0.5);}to{transform: scale(1.3); box-shadow:0 0 25px 12px rgba(0,230,184,0.8);}}
 </style>
 </head>
 <body>
@@ -75,34 +71,33 @@ html,body{margin:0;padding:0;height:100%;font-family:'Vazirmatn',sans-serif;back
 </div>
 
 <script>
-const map=L.map('map').setView([32.0,53.0],6);
+const map = L.map('map').setView([32.0,53.0],6);
 L.tileLayer(`https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=wtyVynedWDK2q9aMHfGI`,{
   attribution:'&copy; <a href="https://www.maptiler.com/">MapTiler</a> & <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
 }).addTo(map);
 
-let markers=[], unlockedIds=JSON.parse(localStorage.getItem("unlockedMarkers")||"[]"), userMarker,userCircle;
+let markers=[], unlockedIds=JSON.parse(localStorage.getItem("unlockedMarkers")||"[]"), userMarker, userCircle;
 const withdrawBtn=document.getElementById("withdrawBtn");
 
-function randomPoints(n, center){
-  markers.forEach(m=>m.remove?.()); markers=[];
-  for(let i=0;i<n;i++){
-    // فاصله بین 100 متر تا 10 کیلومتر
-    const distanceMeters = 100 + Math.random()*10000;
-    const bearing = Math.random()*360*Math.PI/180;
-    const R = 6371e3;
-    const δ = distanceMeters/R;
-    const φ1 = center.lat*Math.PI/180;
-    const λ1 = center.lng*Math.PI/180;
-    const φ2 = Math.asin(Math.sin(φ1)*Math.cos(δ)+Math.cos(φ1)*Math.sin(δ)*Math.cos(bearing));
-    const λ2 = λ1+Math.atan2(Math.sin(bearing)*Math.sin(δ)*Math.cos(φ1),Math.cos(δ)-Math.sin(φ1)*Math.sin(φ2));
-    const lat = φ2*180/Math.PI;
-    const lng = λ2*180/Math.PI;
+function getRandomDistanceLatLng(centerLat,centerLng,minM,maxM){
+  // فاصله بین 50 متر تا 5 کیلومتر
+  const R=6371000; 
+  const d=Math.random()*(maxM-minM)+minM;
+  const brng=Math.random()*2*Math.PI;
+  const newLat=centerLat+(d/R)*(180/Math.PI)*Math.cos(brng);
+  const newLng=centerLng+(d/R)*(180/Math.PI)/Math.cos(centerLat*Math.PI/180)*Math.sin(brng);
+  return {lat:newLat,lng:newLng};
+}
 
-    const id=`${lat.toFixed(5)},${lng.toFixed(5)}`;
-    const color=unlockedIds.includes(id)?'#00e6b8':'#ffd27a';
-    const icon = L.divIcon({className:'glow-prize'});
-    const marker=L.marker([lat,lng],{icon}).addTo(map);
+function createRewards(n,center){
+  markers.forEach(m=>m.remove?.());
+  markers=[];
+  for(let i=0;i<n;i++){
+    const pos=getRandomDistanceLatLng(center.lat,center.lng,50,5000);
+    const id=`${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
+    const marker=L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:'reward-marker'})});
     marker.id=id;
+    marker.addTo(map);
     markers.push(marker);
   }
   document.getElementById("total").innerText=n;
@@ -111,34 +106,29 @@ function randomPoints(n, center){
 }
 
 function distance(lat1,lon1,lat2,lon2){
-  const R=6371e3;
+  const R=6371e3; 
   const φ1=lat1*Math.PI/180, φ2=lat2*Math.PI/180;
-  const Δφ=(lat2-lat1)*Math.PI/180;
-  const Δλ=(lon2-lon1)*Math.PI/180;
+  const Δφ=(lat2-lat1)*Math.PI/180, Δλ=(lon2-lon1)*Math.PI/180;
   const a=Math.sin(Δφ/2)**2+Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
 function updateUserLocation(pos){
-  const lat=pos.coords.latitude,lng=pos.coords.longitude;
-  const userPos=[lat,lng];
-
+  const lat=pos.coords.latitude, lng=pos.coords.longitude;
   if(!userMarker){
-    const icon=L.divIcon({className:'user-marker'});
-    userMarker=L.marker(userPos,{icon}).addTo(map);
-    userCircle=L.circle(userPos,{radius:50,color:'#00e6b8',fillColor:'#00e6b8',fillOpacity:0.1}).addTo(map);
-    map.setView(userPos,16);
-    randomPoints(20,{lat,lng});
+    userMarker=L.marker([lat,lng],{icon:L.divIcon({className:'user-marker'})}).addTo(map);
+    userCircle=L.circle([lat,lng],{radius:50,color:'#00e6b8',fillColor:'#00e6b8',fillOpacity:0.1}).addTo(map);
+    map.setView([lat,lng],16); 
+    createRewards(20,{lat,lng});
   } else {
-    userMarker.setLatLng(userPos);
-    userCircle.setLatLng(userPos);
+    userMarker.setLatLng([lat,lng]);
+    userCircle.setLatLng([lat,lng]);
   }
-
   markers.forEach(marker=>{
     if(!unlockedIds.includes(marker.id)){
       const dist=distance(lat,lng,marker.getLatLng().lat,marker.getLatLng().lng);
       if(dist<50){
-        marker.setIcon(L.divIcon({className:'glow-prize',iconSize:[24,24]}));
+        marker.remove();
         unlockedIds.push(marker.id);
         localStorage.setItem("unlockedMarkers",JSON.stringify(unlockedIds));
         document.getElementById("count").innerText=unlockedIds.length;
@@ -169,12 +159,12 @@ function updateWithdrawState(){
 document.getElementById("resetBtn").addEventListener("click",()=>{
   if(userMarker){
     const latlng=userMarker.getLatLng();
-    map.setView(latlng,16);
-    map.options.scrollWheelZoom=false;
-    map.options.doubleClickZoom=false;
-    map.options.touchZoom=false;
-    map.options.boxZoom=false;
-    map.options.zoomControl=false;
+    map.setView(latlng,16,{animate:false});
+    map.scrollWheelZoom.disable();
+    map.doubleClickZoom.disable();
+    map.touchZoom.disable();
+    map.boxZoom.disable();
+    map.zoomControl.remove();
   }
 });
 
@@ -183,7 +173,7 @@ if(navigator.geolocation){
     updateUserLocation(pos);
     navigator.geolocation.watchPosition(updateUserLocation,()=>{}, {enableHighAccuracy:true});
   });
-} else { alert("مرورگر شما از موقعیت‌یابی پشتیبانی نمی‌کند."); }
+} else {alert("مرورگر شما از موقعیت‌یابی پشتیبانی نمی‌کند.");}
 </script>
 </body>
 </html>
