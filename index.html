@@ -26,7 +26,6 @@
   .card p{color:#ccc;margin-bottom:20px}
   .card button{background:linear-gradient(135deg,#00e6b8,#0075ff);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-size:15px;cursor:pointer}
   .card button:hover{opacity:.9}
-  /* جایزه حرفه‌ای */
   .reward-marker {
     width: 24px; height: 24px;
     background: radial-gradient(circle at 50% 30%, #ffd700, #ffaa00);
@@ -39,17 +38,15 @@
   .user-marker {width:18px;height:18px;background:radial-gradient(circle,#00e6b8 30%,#0075ff 70%);border-radius:50%;box-shadow:0 0 15px 6px rgba(0,230,184,0.5);animation:pulse 2s infinite alternate;border:2px solid #fff;}
   @keyframes pulse{from{transform: scale(1); box-shadow:0 0 15px 6px rgba(0,230,184,0.5);}to{transform: scale(1.3); box-shadow:0 0 25px 12px rgba(0,230,184,0.8);}}
 
-  /* --- لاگین استایل --- */
-  #loginOverlay{position:fixed;inset:0;background:linear-gradient(180deg,rgba(5,8,15,0.95),rgba(2,3,6,0.98));display:flex;align-items:center;justify-content:center;z-index:2000;direction:rtl;}
+  /* صفحه لاگین */
+  #loginOverlay{position:fixed;inset:0;background:linear-gradient(180deg,rgba(5,8,15,0.95),rgba(2,3,6,0.98));display:flex;align-items:center;justify-content:center;z-index:2000;}
   #loginBox{background:rgba(255,255,255,0.04);padding:28px;border-radius:14px;border:1px solid rgba(255,255,255,0.06);width:360px;max-width:92%;text-align:center;backdrop-filter:blur(8px);box-shadow:0 8px 40px rgba(0,0,0,0.6)}
-  #loginBox h1{margin:0 0 10px 0;color:#00e6b8;font-size:20px}
+  #loginBox h1{margin:0 0 10px;color:#00e6b8;font-size:20px}
   #loginBox p{margin:0 0 18px;color:#cfd8e3}
   .input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.35);color:#fff;font-size:15px;margin-bottom:12px;outline:none}
   .input:focus{box-shadow:0 6px 18px rgba(0,230,184,0.08);border-color:rgba(0,230,184,0.3)}
   .login-btn{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#00e6b8,#0075ff);color:#fff;font-weight:700;font-size:15px;cursor:pointer}
   .err{color:#ff7b7b;margin-top:8px;min-height:18px}
-  /* small note */
-  .login-note{font-size:13px;color:#9fb7c8;margin-top:8px}
 </style>
 </head>
 <body>
@@ -82,31 +79,27 @@
   </div>
 </div>
 
-<!-- Login overlay (اجباری) -->
-<div id="loginOverlay" aria-hidden="false">
-  <div id="loginBox" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-    <h1 id="loginTitle">کلاس نهم ج</h1>
+<div id="loginOverlay">
+  <div id="loginBox">
+    <h1>کلاس نهم ج</h1>
     <p>برای ورود، رمز را وارد کنید</p>
-    <input id="pwd" class="input" type="password" placeholder="رمز را وارد کنید" autocomplete="off" />
+    <input id="pwd" class="input" type="password" placeholder="رمز عبور" autocomplete="off" />
     <button id="loginBtn" class="login-btn">ورود</button>
     <div class="err" id="errMsg"></div>
-    <div class="login-note">رمز: <strong>Nohom_G890</strong></div>
   </div>
 </div>
 
 <script>
-/* تنظیمات اولیه و متغیرها */
-const map = L.map('map', {zoomControl:true}).setView([32.0,53.0],6);
+const LOGIN_PASSWORD = "Nohom_G890"; // مخفی در کد، نمایش داده نمی‌شود
+
+const map = L.map('map').setView([32.0,53.0],6);
 L.tileLayer(`https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=wtyVynedWDK2q9aMHfGI`,{
   attribution:'&copy; <a href="https://www.maptiler.com/">MapTiler</a> & <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
 }).addTo(map);
 
-let markers = [], unlockedIds = JSON.parse(localStorage.getItem("unlockedMarkers")||"[]"), userMarker, userCircle;
-const withdrawBtn = document.getElementById("withdrawBtn");
+let markers=[], unlockedIds=JSON.parse(localStorage.getItem("unlockedMarkers")||"[]"), userMarker, userCircle;
+const withdrawBtn=document.getElementById("withdrawBtn");
 
-document.getElementById("count").innerText = unlockedIds.length;
-
-/* تابع فاصله (هارسن) */
 function distance(lat1,lon1,lat2,lon2){
   const R=6371e3; 
   const φ1=lat1*Math.PI/180, φ2=lat2*Math.PI/180;
@@ -115,7 +108,6 @@ function distance(lat1,lon1,lat2,lon2){
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-/* تولید موقعیت تصادفی در بازه فاصله (متر) */
 function getRandomDistanceLatLng(centerLat,centerLng,minM,maxM){
   const R=6371000;
   const d=Math.random()*(maxM-minM)+minM;
@@ -125,13 +117,11 @@ function getRandomDistanceLatLng(centerLat,centerLng,minM,maxM){
   return {lat:newLat,lng:newLng};
 }
 
-/* ایجاد نشانگرها - حالا به‌صورت قابل تغییر؛ پیش‌فرض 60 */
 function createRewards(n,center){
-  // حذف نشانگرهای قبلی
   markers.forEach(m=>m.remove?.());
   markers=[];
   for(let i=0;i<n;i++){
-    const pos=getRandomDistanceLatLng(center.lat,center.lng,50,5000);
+    const pos=getRandomDistanceLatLng(center.lat,center.lng,30,200); // نزدیک‌تر شد
     const id=`${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
     const marker=L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:'reward-marker'})});
     marker.id=id;
@@ -143,14 +133,12 @@ function createRewards(n,center){
   updateWithdrawState();
 }
 
-/* به‌روزرسانی موقعیت کاربر و چک کردن باز شدن قفل‌ها */
 function updateUserLocation(pos){
   const lat=pos.coords.latitude, lng=pos.coords.longitude;
   if(!userMarker){
     userMarker=L.marker([lat,lng],{icon:L.divIcon({className:'user-marker'})}).addTo(map);
     userCircle=L.circle([lat,lng],{radius:50,color:'#00e6b8',fillColor:'#00e6b8',fillOpacity:0.1}).addTo(map);
-    map.setView([lat,lng],16);
-    // ایجاد 60 نشانگر هنگام اولین مکان‌یابی
+    map.setView([lat,lng],17);
     createRewards(60,{lat,lng});
   } else {
     userMarker.setLatLng([lat,lng]);
@@ -173,14 +161,12 @@ function updateUserLocation(pos){
   });
 }
 
-/* نمایش مودال ساده */
 function showModal(sel){
   const el=document.querySelector(sel);
   el.style.display='flex';
   el.querySelector('button').addEventListener('click',()=>el.style.display='none',{once:true});
 }
 
-/* وضعیت دکمه‌ی برداشت (Withdraw) */
 function updateWithdrawState(){
   if(unlockedIds.length>=10){
     withdrawBtn.classList.remove('btn-disabled');
@@ -191,75 +177,32 @@ function updateWithdrawState(){
   }
 }
 
-/* دکمه ریست (همون رفتار قبلی) */
 document.getElementById("resetBtn").addEventListener("click",()=>{
   if(userMarker){
     const latlng=userMarker.getLatLng();
-    map.setView(latlng,16,{animate:false});
-    map.scrollWheelZoom.disable();
-    map.doubleClickZoom.disable();
-    map.touchZoom.disable();
-    map.boxZoom.disable();
-    try{ map.zoomControl.remove(); }catch(e){}
+    map.setView(latlng,17,{animate:false});
   }
 });
 
-/* هندل کردن مودال قفل */
-document.getElementById("closeModal").addEventListener("click",()=>{
-  document.querySelector("#modal").style.display='none';
-});
-
-/* ------------------ بخش لاگین اجباری ------------------ */
-const LOGIN_PASSWORD = "Nohom_G890";
-const loginOverlay = document.getElementById("loginOverlay");
-const loginBtn = document.getElementById("loginBtn");
-const pwdInput = document.getElementById("pwd");
-const errMsg = document.getElementById("errMsg");
-
-function acceptLogin(){
-  // پنهان کردن لاگین و شروع موقعیت‌یابی
-  loginOverlay.style.display = "none";
-  // درخواست موقعیت و آغاز نظارت (فقط بعد از ورود)
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(pos=>{
-      updateUserLocation(pos);
-      navigator.geolocation.watchPosition(updateUserLocation,()=>{}, {enableHighAccuracy:true});
-    }, err=>{
-      alert("برای عملکرد کامل، اجازه‌ی دسترسی به مکان را فعال کنید.");
-    }, {enableHighAccuracy:true});
-  } else {
-    alert("مرورگر شما از موقعیت‌یابی پشتیبانی نمی‌کند.");
-  }
-}
-
-function rejectLogin(){
-  errMsg.innerText = "رمز اشتباه است. دوباره تلاش کنید.";
-  pwdInput.classList.add('shake');
-  setTimeout(()=>{ pwdInput.classList.remove('shake'); },400);
-}
-
-/* اضافه کردن افکت shake مختصر */
-const style = document.createElement('style');
-style.innerHTML = `
-@keyframes shake {0%{transform:translateX(0)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}100%{transform:translateX(0)}}
-.shake{animation:shake .35s ease}
-`;
-document.head.appendChild(style);
-
-loginBtn.addEventListener("click",()=>{
-  const val = pwdInput.value || "";
-  if(val === LOGIN_PASSWORD){
-    errMsg.innerText = "";
-    acceptLogin();
-  } else {
-    rejectLogin();
+/* 🔒 سیستم لاگین */
+const overlay=document.getElementById("loginOverlay");
+document.getElementById("loginBtn").addEventListener("click",()=>{
+  const val=document.getElementById("pwd").value.trim();
+  if(val===LOGIN_PASSWORD){
+    overlay.style.display="none";
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(pos=>{
+        updateUserLocation(pos);
+        navigator.geolocation.watchPosition(updateUserLocation,()=>{}, {enableHighAccuracy:true});
+      });
+    }
+  }else{
+    document.getElementById("errMsg").innerText="رمز اشتباه است!";
   }
 });
-pwdInput.addEventListener("keydown",(e)=>{
-  if(e.key === "Enter") loginBtn.click();
+document.getElementById("pwd").addEventListener("keydown",e=>{
+  if(e.key==="Enter")document.getElementById("loginBtn").click();
 });
-
-/* اگر کاربر قبلاً لاگین کرده باشه (ما اینجا از localStorage استفاده نکردیم که لاگین بمونه به‌خاطر امنیت) - اما می‌تونیم بعداً اضافه کنیم */
 </script>
 </body>
 </html>
