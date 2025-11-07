@@ -19,16 +19,28 @@
   .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:999;}
   .card{background:rgba(15,22,40,0.9);border-radius:20px;padding:30px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.05);}
   .card h2{margin-bottom:10px;color:#00e6b8}
+
+  /* 🎯 نقاط جایزه جدید - ثابت و درخشان */
   .reward-marker {
-    width: 26px; height: 26px;
-    background: conic-gradient(from 0deg, #ffcc00, #ffaa00, #ffcc00);
+    width: 24px; height: 24px;
+    background: radial-gradient(circle at 50% 40%, #fff099, #ffcc00 70%, #b38600);
     border-radius: 50%;
-    border:2px solid #fff;
-    box-shadow: 0 0 20px 6px rgba(255, 230, 80, 0.7);
-    animation: spin 3s linear infinite;
+    border: 2px solid #fff5;
+    box-shadow: 0 0 25px 8px rgba(255,215,0,0.7);
+    animation: glow 1.6s infinite alternate ease-in-out;
   }
-  @keyframes spin {to{transform:rotate(360deg)}}
-  .user-marker {width:20px;height:20px;background:radial-gradient(circle,#00e6b8 30%,#0075ff 70%);border-radius:50%;box-shadow:0 0 20px 8px rgba(0,230,184,0.7);border:2px solid #fff;}
+  @keyframes glow {
+    from { box-shadow: 0 0 12px 4px rgba(255,215,0,0.5); transform: scale(1); }
+    to   { box-shadow: 0 0 28px 10px rgba(255,215,0,0.9); transform: scale(1.15); }
+  }
+
+  .user-marker {
+    width:20px;height:20px;
+    background:radial-gradient(circle,#00e6b8 30%,#0075ff 70%);
+    border-radius:50%;
+    box-shadow:0 0 20px 8px rgba(0,230,184,0.7);
+    border:2px solid #fff;
+  }
 </style>
 </head>
 <body>
@@ -130,7 +142,6 @@ function updateUserLocation(pos){
     userCircle.setLatLng([lat,lng]);
   }
 
-  // بررسی فاصله با جایزه‌ها
   let closest = null, minDist = Infinity;
   markers.forEach(marker=>{
     const dist=distance(lat,lng,marker.getLatLng().lat,marker.getLatLng().lng);
@@ -147,11 +158,11 @@ function updateUserLocation(pos){
     }
   });
 
-  // رسم مسیر اگر بین 100 تا 2000 متر باشه
+  // مسیر بین 100 تا 2000 متر
   if(closest && minDist>100 && minDist<2000){
     const points=[ [lat,lng], [closest.getLatLng().lat, closest.getLatLng().lng] ];
     if(routeLine) routeLine.remove();
-    routeLine = L.polyline(points,{color:'#0099ff',weight:6,opacity:0.9, dashArray:'10,6'}).addTo(map);
+    routeLine = L.polyline(points,{color:'#00aaff',weight:6,opacity:0.9, dashArray:'12,6'}).addTo(map);
   } else {
     if(routeLine){ routeLine.remove(); routeLine=null; }
   }
