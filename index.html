@@ -1,29 +1,51 @@
-<!DOCTYPE html><html lang="fa">
+<!DOCTYPE html>
+<html lang="fa">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
 <title>کلاس نهم ج</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   *{box-sizing:border-box;direction:rtl}
-  html,body{margin:0;padding:0;height:100%;font-family:'Vazirmatn',sans-serif;background:#0b1220;overflow:hidden;color:#fff}
+  html,body{
+    margin:0;padding:0;height:100%;
+    font-family:'Vazirmatn',sans-serif;
+    background:#0b1220;overflow:hidden;color:#fff;
+    touch-action:pan-x pan-y;
+  }
   #map{height:100%;width:100%;filter:brightness(0.85) saturate(1.2)}
-  #overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background:radial-gradient(circle at center,rgba(255,255,255,0.05),transparent 80%);opacity:0.25;}
-  .hud{position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:10;}
-  .hud-item{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);padding:10px 18px;border-radius:16px;backdrop-filter:blur(8px);box-shadow:0 2px 10px rgba(0,0,0,0.4);font-size:15px;transition:all .3s ease;}
+  #overlay{position:absolute;top:0;left:0;width:100%;height:100%;
+    pointer-events:none;background:radial-gradient(circle at center,rgba(255,255,255,0.05),transparent 80%);
+    opacity:0.25;}
+  .hud{position:absolute;top:20px;left:50%;transform:translateX(-50%);
+    display:flex;gap:12px;z-index:10;}
+  .hud-item{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);
+    padding:10px 18px;border-radius:16px;backdrop-filter:blur(8px);
+    box-shadow:0 2px 10px rgba(0,0,0,0.4);font-size:15px;transition:all .3s ease;}
   .hud-item span{color:#00e6b8;font-weight:bold;font-size:17px;}
   .hud-item:hover{transform:scale(1.05);background:rgba(255,255,255,0.15)}
-  .bottom-actions{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:16px;z-index:10;}
-  .floating-btn{background:linear-gradient(135deg,#00e6b8,#0075ff);color:#fff;padding:14px 26px;border-radius:40px;font-size:16px;font-weight:600;border:none;cursor:pointer;box-shadow:0 6px 25px rgba(0,230,184,0.4);transition:all .3s ease;min-width:140px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;}
+  .bottom-actions{position:absolute;bottom:24px;left:50%;
+    transform:translateX(-50%);display:flex;gap:16px;z-index:10;}
+  .floating-btn{background:linear-gradient(135deg,#00e6b8,#0075ff);color:#fff;
+    padding:14px 26px;border-radius:40px;font-size:16px;font-weight:600;
+    border:none;cursor:pointer;box-shadow:0 6px 25px rgba(0,230,184,0.4);
+    transition:all .3s ease;min-width:140px;display:inline-flex;
+    align-items:center;justify-content:center;text-decoration:none;}
   .floating-btn:hover{transform:scale(1.05);box-shadow:0 8px 30px rgba(0,230,184,0.6);} 
   .btn-disabled{opacity:0.45;pointer-events:none;filter:grayscale(0.3);} 
-  .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:999;}
-  .card{background:rgba(15,22,40,0.9);border-radius:20px;padding:30px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.05);backdrop-filter:blur(10px);animation:pop .4s ease;max-width:350px;}
+  .modal{position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.6);display:none;align-items:center;
+    justify-content:center;z-index:999;}
+  .card{background:rgba(15,22,40,0.9);border-radius:20px;padding:30px;text-align:center;
+    box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.05);
+    backdrop-filter:blur(10px);animation:pop .4s ease;max-width:350px;}
   @keyframes pop{0%{transform:scale(0.7);opacity:0}100%{transform:scale(1);opacity:1}}
   .card h2{margin-bottom:10px;color:#00e6b8}
   .card p{color:#ccc;margin-bottom:20px}
-  .card button{background:linear-gradient(135deg,#00e6b8,#0075ff);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-size:15px;cursor:pointer}
+  .card button{background:linear-gradient(135deg,#00e6b8,#0075ff);
+    border:none;color:#fff;padding:10px 20px;border-radius:8px;
+    font-size:15px;cursor:pointer}
   .card button:hover{opacity:.9}
   .reward-marker {
     width: 24px; height: 24px;
@@ -34,31 +56,49 @@
     border: 2px solid #fff;
   }
   @keyframes pulseReward {from{transform:scale(1);}to{transform:scale(1.3);}}
-  .user-marker {width:18px;height:18px;background:radial-gradient(circle,#00e6b8 30%,#0075ff 70%);border-radius:50%;box-shadow:0 0 15px 6px rgba(0,230,184,0.5);animation:pulse 2s infinite alternate;border:2px solid #fff;}
-  @keyframes pulse{from{transform: scale(1); box-shadow:0 0 15px 6px rgba(0,230,184,0.5);}to{transform: scale(1.3); box-shadow:0 0 25px 12px rgba(0,230,184,0.8);}}/* صفحه لاگین */ #loginOverlay{position:fixed;inset:0;background:linear-gradient(180deg,rgba(5,8,15,0.95),rgba(2,3,6,0.98));display:flex;align-items:center;justify-content:center;z-index:2000;} #loginBox{background:rgba(255,255,255,0.04);padding:28px;border-radius:14px;border:1px solid rgba(255,255,255,0.06);width:360px;max-width:92%;text-align:center;backdrop-filter:blur(8px);box-shadow:0 8px 40px rgba(0,0,0,0.6)} #loginBox h1{margin:0 0 10px;color:#00e6b8;font-size:20px} #loginBox p{margin:0 0 18px;color:#cfd8e3} .input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.35);color:#fff;font-size:15px;margin-bottom:12px;outline:none} .input:focus{box-shadow:0 6px 18px rgba(0,230,184,0.08);border-color:rgba(0,230,184,0.3)} .login-btn{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#00e6b8,#0075ff);color:#fff;font-weight:700;font-size:15px;cursor:pointer} .err{color:#ff7b7b;margin-top:8px;min-height:18px} </style>
-
+  .user-marker {width:18px;height:18px;background:radial-gradient(circle,#00e6b8 30%,#0075ff 70%);
+    border-radius:50%;box-shadow:0 0 15px 6px rgba(0,230,184,0.5);
+    animation:pulse 2s infinite alternate;border:2px solid #fff;}
+  @keyframes pulse{from{transform: scale(1); box-shadow:0 0 15px 6px rgba(0,230,184,0.5);}
+                   to{transform: scale(1.3); box-shadow:0 0 25px 12px rgba(0,230,184,0.8);}}
+  /* صفحه لاگین */
+  #loginOverlay{position:fixed;inset:0;background:linear-gradient(180deg,rgba(5,8,15,0.95),rgba(2,3,6,0.98));
+    display:flex;align-items:center;justify-content:center;z-index:2000;}
+  #loginBox{background:rgba(255,255,255,0.04);padding:28px;border-radius:14px;
+    border:1px solid rgba(255,255,255,0.06);width:360px;max-width:92%;
+    text-align:center;backdrop-filter:blur(8px);box-shadow:0 8px 40px rgba(0,0,0,0.6)}
+  #loginBox h1{margin:0 0 10px;color:#00e6b8;font-size:20px}
+  #loginBox p{margin:0 0 18px;color:#cfd8e3}
+  .input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);
+    background:rgba(0,0,0,0.35);color:#fff;font-size:15px;margin-bottom:12px;outline:none}
+  .input:focus{box-shadow:0 6px 18px rgba(0,230,184,0.08);border-color:rgba(0,230,184,0.3)}
+  .login-btn{width:100%;padding:12px;border-radius:10px;border:none;
+    background:linear-gradient(135deg,#00e6b8,#0075ff);color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+  .err{color:#ff7b7b;margin-top:8px;min-height:18px}
+</style>
 </head>
 <body>
 <div id="map"></div>
-<div id="overlay"></div><div class="hud">
-  <div class="hud-item">قفل‌های بازشده: <span id="count">0</span>/10</div>
-  <div class="hud-item">نشانگرها: <span id="total">60</span></div>
-</div><div class="bottom-actions">
+<div id="overlay"></div>
+
+<div class="hud">
+  <div class="hud-item">امتیاز: <span id="score">0</span>/10</div>
+</div>
+
+<div class="bottom-actions">
   <button id="resetBtn" class="floating-btn">Reset</button>
   <a id="withdrawBtn" class="floating-btn btn-disabled" href="#" target="_blank">Withdraw</a>
-</div><div id="modal" class="modal">
-  <div class="card">
-    <h2>🎉 قفل باز شد!</h2>
-    <p>آفرین! یک قفل دیگر باز کردی.</p>
-    <button id="closeModal">ادامه</button>
-  </div>
-</div><div id="winModal" class="modal">
+</div>
+
+<div id="winModal" class="modal">
   <div class="card">
     <h2>🏆 تبریک!</h2>
-    <p>تو تونستی ۱۰ قفل رو باز کنی!<br>هدیه‌ات منتظرته 💎</p>
-    <button onclick="window.location.reload()">شروع دوباره</button>
+    <p>تو تونستی پاداش رو بگیری!<br>هدیه‌ات باز شد 💎</p>
+    <button id="closeWin">باشه</button>
   </div>
-</div><div id="loginOverlay">
+</div>
+
+<div id="loginOverlay">
   <div id="loginBox">
     <h1>کلاس نهم ج</h1>
     <p>برای ورود، رمز را وارد کنید</p>
@@ -66,26 +106,23 @@
     <button id="loginBtn" class="login-btn">ورود</button>
     <div class="err" id="errMsg"></div>
   </div>
-</div><script>
-const LOGIN_PASSWORD = "Nohom_G890"; // مخفی در کد، نمایش داده نمی‌شود
+</div>
 
-// تنظیم اولیه نقشه
+<script>
+const LOGIN_PASSWORD = "Nohom_G890";
+
 const map = L.map('map').setView([32.0,53.0],6);
 L.tileLayer(`https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=wtyVynedWDK2q9aMHfGI`,{
-  attribution:'&copy; <a href="https://www.maptiler.com/">MapTiler</a> & <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+  attribution:'&copy; MapTiler & OpenStreetMap'
 }).addTo(map);
 
-// وضعیت و متغیرها
-let markers=[], unlockedIds=JSON.parse(localStorage.getItem("unlockedMarkers")||"[]"), userMarker, userCircle;
+let rewardMarker, userMarker, userCircle;
+let hasReward = JSON.parse(localStorage.getItem("rewardTaken") || "false");
 const withdrawBtn=document.getElementById("withdrawBtn");
-const MIN_DISTANCE_BETWEEN_MARKERS = 600; // متر (حداقل فاصله بین هر دو نشانگر)
-const MARKER_MIN_DIST = 1000; // متر -> 1 km
-const MARKER_MAX_DIST = 3000; // متر -> 3 km
+const scoreEl = document.getElementById("score");
 
-// در صورتی که قبلاً زوم قفل شده باشد، هنگام بارگذاری اعمال کن
-if(localStorage.getItem('zoomLocked') === 'true'){
-  lockZoomInteractions();
-}
+if(localStorage.getItem('zoomLocked') === 'true'){ lockZoomInteractions(); }
+if(hasReward){ scoreEl.innerText="10"; withdrawBtn.classList.remove('btn-disabled'); withdrawBtn.href='https://t.me/Whale_Armin'; }
 
 function distance(lat1,lon1,lat2,lon2){
   const R=6371e3; 
@@ -95,49 +132,20 @@ function distance(lat1,lon1,lat2,lon2){
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-// تولید مختصات تصادفی در برد مشخص (d بین minM و maxM)
 function getRandomDistanceLatLng(centerLat,centerLng,minM,maxM){
   const R=6371000;
   const d=Math.random()*(maxM-minM)+minM;
   const brng=Math.random()*2*Math.PI;
-  const newLat=centerLat + (d/R) * Math.cos(brng) * (180/Math.PI);
-  const newLng=centerLng + (d/R) * Math.sin(brng) * (180/Math.PI) / Math.cos(centerLat*Math.PI/180);
+  const newLat=centerLat + (d/R)*(180/Math.PI)*Math.cos(brng);
+  const newLng=centerLng + (d/R)*(180/Math.PI)*Math.sin(brng)/Math.cos(centerLat*Math.PI/180);
   return {lat:newLat,lng:newLng};
 }
 
-// ساخت نشانگرها با رعایت حداقل فاصله بین ایشان
-function createRewards(n,center){
-  markers.forEach(m=>m.remove?.());
-  markers=[];
-  let attemptsLimit = 1000;
-  for(let i=0;i<n;i++){
-    let attempt=0;
-    let pos=null;
-    while(attempt < attemptsLimit){
-      const candidate = getRandomDistanceLatLng(center.lat,center.lng,MARKER_MIN_DIST,MARKER_MAX_DIST);
-      const id = `${candidate.lat.toFixed(5)},${candidate.lng.toFixed(5)}`;
-      // فاصله با همه نشانگرهای قبلی را بررسی کن
-      let ok=true;
-      for(const m of markers){
-        const d = distance(candidate.lat,candidate.lng,m.getLatLng().lat,m.getLatLng().lng);
-        if(d < MIN_DISTANCE_BETWEEN_MARKERS){ ok=false; break; }
-      }
-      if(ok){ pos = candidate; break; }
-      attempt++;
-    }
-    // اگر موفق نشدیم مکان جدید پیدا کنیم، با همون مکان اضافه کن (برای جلوگیری از حلقه بی‌نهایت)
-    if(!pos){
-      pos = getRandomDistanceLatLng(center.lat,center.lng,MARKER_MIN_DIST,MARKER_MAX_DIST);
-    }
-    const id=`${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
-    const marker=L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:'reward-marker'})});
-    marker.id=id;
-    marker.addTo(map);
-    markers.push(marker);
-  }
-  document.getElementById("total").innerText=n;
-  document.getElementById("count").innerText=unlockedIds.length;
-  updateWithdrawState();
+function createReward(center){
+  if(hasReward) return;
+  const pos=getRandomDistanceLatLng(center.lat,center.lng,1000,3000);
+  rewardMarker=L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:'reward-marker'})});
+  rewardMarker.addTo(map);
 }
 
 function updateUserLocation(pos){
@@ -146,45 +154,33 @@ function updateUserLocation(pos){
     userMarker=L.marker([lat,lng],{icon:L.divIcon({className:'user-marker'})}).addTo(map);
     userCircle=L.circle([lat,lng],{radius:50,color:'#00e6b8',fillColor:'#00e6b8',fillOpacity:0.1}).addTo(map);
     map.setView([lat,lng],17);
-    createRewards(60,{lat,lng});
+    createReward({lat,lng});
   } else {
     userMarker.setLatLng([lat,lng]);
     userCircle.setLatLng([lat,lng]);
   }
 
-  markers.forEach(marker=>{
-    if(!unlockedIds.includes(marker.id)){
-      const dist=distance(lat,lng,marker.getLatLng().lat,marker.getLatLng().lng);
-      if(dist<50){
-        marker.remove();
-        unlockedIds.push(marker.id);
-        localStorage.setItem("unlockedMarkers",JSON.stringify(unlockedIds));
-        document.getElementById("count").innerText=unlockedIds.length;
-        updateWithdrawState();
-        showModal("#modal");
-        if(unlockedIds.length>=10)setTimeout(()=>showModal("#winModal"),700);
-      }
+  if(rewardMarker && !hasReward){
+    const dist=distance(lat,lng,rewardMarker.getLatLng().lat,rewardMarker.getLatLng().lng);
+    if(dist<50){
+      rewardMarker.remove();
+      hasReward=true;
+      localStorage.setItem("rewardTaken","true");
+      localStorage.setItem("zoomLocked","true");
+      scoreEl.innerText="10";
+      withdrawBtn.classList.remove('btn-disabled');
+      withdrawBtn.href='https://t.me/Whale_Armin';
+      showModal();
     }
-  });
-}
-
-function showModal(sel){
-  const el=document.querySelector(sel);
-  el.style.display='flex';
-  el.querySelector('button').addEventListener('click',()=>el.style.display='none',{once:true});
-}
-
-function updateWithdrawState(){
-  if(unlockedIds.length>=10){
-    withdrawBtn.classList.remove('btn-disabled');
-    withdrawBtn.href='https://t.me/Whale_Armin';
-  } else {
-    withdrawBtn.classList.add('btn-disabled');
-    withdrawBtn.href='#';
   }
 }
 
-// قفل کردن تعاملات زوم (اما اجازه جابجایی)
+function showModal(){
+  const modal=document.getElementById("winModal");
+  modal.style.display='flex';
+  document.getElementById("closeWin").addEventListener('click',()=>modal.style.display='none',{once:true});
+}
+
 function lockZoomInteractions(){
   try{
     map.scrollWheelZoom.disable();
@@ -192,36 +188,19 @@ function lockZoomInteractions(){
     map.doubleClickZoom.disable();
     map.boxZoom.disable();
     map.keyboard.disable();
-    // برداشتن کنترل زوم از رابط (اختیاری)
     if(map.zoomControl) map.zoomControl.remove();
-  }catch(e){console.warn('unable to fully lock zoom',e)}
+  }catch(e){}
 }
 
-// باز کردن تعاملات زوم (در صورت نیاز)
-function unlockZoomInteractions(){
-  try{
-    map.scrollWheelZoom.enable();
-    map.touchZoom.enable();
-    map.doubleClickZoom.enable();
-    map.boxZoom.enable();
-    map.keyboard.enable();
-    // اضافه کردن کنترل زوم در صورت نیاز
-    if(!map.zoomControl) L.control.zoom().addTo(map);
-  }catch(e){console.warn('unable to unlock zoom',e)}
-}
-
-// دکمه ریست: به موقعیت زنده بازگرد و زوم رو قفل کن تا زمان رفرش
 document.getElementById("resetBtn").addEventListener("click",()=>{
   if(userMarker){
     const latlng=userMarker.getLatLng();
     map.setView(latlng,17,{animate:false});
-    // قفل کردن زوم و ذخیره حالت در localStorage
     lockZoomInteractions();
     localStorage.setItem('zoomLocked','true');
   }
 });
 
-/* 🔒 سیستم لاگین */
 const overlay=document.getElementById("loginOverlay");
 document.getElementById("loginBtn").addEventListener("click",()=>{
   const val=document.getElementById("pwd").value.trim();
@@ -233,12 +212,13 @@ document.getElementById("loginBtn").addEventListener("click",()=>{
         navigator.geolocation.watchPosition(updateUserLocation,()=>{}, {enableHighAccuracy:true});
       });
     }
-  }else{
+  } else {
     document.getElementById("errMsg").innerText="رمز اشتباه است!";
   }
 });
 document.getElementById("pwd").addEventListener("keydown",e=>{
   if(e.key==="Enter")document.getElementById("loginBtn").click();
 });
-</script></body>
+</script>
+</body>
 </html>
