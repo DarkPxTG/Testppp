@@ -9,47 +9,34 @@
 <style>
   *{box-sizing:border-box;direction:rtl}
   html,body{margin:0;padding:0;height:100%;font-family:'Vazirmatn',sans-serif;background:#0b1220;overflow:hidden;color:#fff}
-  #map{height:100%;width:100%;filter:brightness(0.9) saturate(1.1)}
-  #overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background:radial-gradient(circle at center,rgba(255,255,255,0.05),transparent 80%);opacity:0.25;}
+  #map{height:100%;width:100%;filter:brightness(0.85) saturate(1.2)}
   .hud{position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:10;}
-  .hud-item{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);padding:10px 18px;border-radius:16px;backdrop-filter:blur(8px);box-shadow:0 2px 10px rgba(0,0,0,0.4);font-size:15px;transition:all .3s ease;}
+  .hud-item{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);padding:10px 18px;border-radius:16px;backdrop-filter:blur(8px);box-shadow:0 2px 10px rgba(0,0,0,0.4);font-size:15px;}
   .hud-item span{color:#00e6b8;font-weight:bold;font-size:17px;}
-  .hud-item:hover{transform:scale(1.05);background:rgba(255,255,255,0.15)}
   .bottom-actions{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:16px;z-index:10;}
-  .floating-btn{background:linear-gradient(135deg,#00e6b8,#0075ff);color:#fff;padding:14px 26px;border-radius:40px;font-size:16px;font-weight:600;border:none;cursor:pointer;box-shadow:0 6px 25px rgba(0,230,184,0.4);transition:all .3s ease;min-width:140px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;}
-  .floating-btn:hover{transform:scale(1.05);box-shadow:0 8px 30px rgba(0,230,184,0.6);}
+  .floating-btn{background:linear-gradient(135deg,#00e6b8,#0075ff);color:#fff;padding:14px 26px;border-radius:40px;font-size:16px;font-weight:600;border:none;cursor:pointer;box-shadow:0 6px 25px rgba(0,230,184,0.4);transition:all .3s ease;min-width:140px;}
   .btn-disabled{opacity:0.45;pointer-events:none;filter:grayscale(0.3);}
   .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:999;}
-  .card{background:rgba(15,22,40,0.9);border-radius:20px;padding:30px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.05);backdrop-filter:blur(10px);animation:pop .4s ease;max-width:350px;}
-  @keyframes pop{0%{transform:scale(0.7);opacity:0}100%{transform:scale(1);opacity:1}}
+  .card{background:rgba(15,22,40,0.9);border-radius:20px;padding:30px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.05);}
   .card h2{margin-bottom:10px;color:#00e6b8}
-  .card p{color:#ccc;margin-bottom:20px}
-  .card button{background:linear-gradient(135deg,#00e6b8,#0075ff);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-size:15px;cursor:pointer}
-  .card button:hover{opacity:.9}
-  /* جایزه */
   .reward-marker {
     width: 26px; height: 26px;
-    background: radial-gradient(circle at 50% 30%, #ffe066, #ff9900);
+    background: conic-gradient(from 0deg, #ffcc00, #ffaa00, #ffcc00);
     border-radius: 50%;
-    box-shadow: 0 0 15px #ffd700, 0 0 25px #ffaa00;
-    animation: pulseReward 1.8s infinite alternate;
-    border: 2px solid #fff;
+    border:2px solid #fff;
+    box-shadow: 0 0 20px 6px rgba(255, 230, 80, 0.7);
+    animation: spin 3s linear infinite;
   }
-  @keyframes pulseReward {from{transform:scale(1);}to{transform:scale(1.25);}}
-  .user-marker {width:18px;height:18px;background:radial-gradient(circle,#00e6b8 30%,#0075ff 70%);border-radius:50%;box-shadow:0 0 15px 6px rgba(0,230,184,0.5);animation:pulse 2s infinite alternate;border:2px solid #fff;}
-  @keyframes pulse{from{transform: scale(1);}to{transform: scale(1.25);}}
-  .route-line {
-    filter: drop-shadow(0 0 6px #00aaff);
-  }
+  @keyframes spin {to{transform:rotate(360deg)}}
+  .user-marker {width:20px;height:20px;background:radial-gradient(circle,#00e6b8 30%,#0075ff 70%);border-radius:50%;box-shadow:0 0 20px 8px rgba(0,230,184,0.7);border:2px solid #fff;}
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="overlay"></div>
 
 <div class="hud">
   <div class="hud-item">قفل‌های بازشده: <span id="count">0</span>/10</div>
-  <div class="hud-item">نشانگرها: <span id="total">20</span></div>
+  <div class="hud-item">نشانگرها: <span id="total">6</span></div>
 </div>
 
 <div class="bottom-actions">
@@ -83,7 +70,7 @@ let markers=[], unlockedIds=JSON.parse(localStorage.getItem("unlockedMarkers")||
 const withdrawBtn=document.getElementById("withdrawBtn");
 
 function getRandomDistanceLatLng(centerLat,centerLng,minM,maxM){
-  const R=6371000; 
+  const R=6371000;
   const d=Math.random()*(maxM-minM)+minM;
   const brng=Math.random()*2*Math.PI;
   const newLat=centerLat+(d/R)*(180/Math.PI)*Math.cos(brng);
@@ -95,7 +82,7 @@ function createRewards(n,center){
   markers.forEach(m=>m.remove?.());
   markers=[];
   for(let i=0;i<n;i++){
-    const pos=getRandomDistanceLatLng(center.lat,center.lng,50,5000);
+    const pos=getRandomDistanceLatLng(center.lat,center.lng,100,5000);
     const id=`${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
     const marker=L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:'reward-marker'})});
     marker.id=id;
@@ -115,61 +102,6 @@ function distance(lat1,lon1,lat2,lon2){
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-async function drawRoute(userLat,userLng,targetLat,targetLng){
-  if(routeLine) map.removeLayer(routeLine);
-  try{
-    const res = await fetch(`https://api.maptiler.com/directions/driving/${userLng},${userLat};${targetLng},${targetLat}?key=wtyVynedWDK2q9aMHfGI&geometries=geojson`);
-    const data = await res.json();
-    const coords = data.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
-    routeLine = L.polyline(coords,{color:'#00aaff',weight:5,opacity:0.9,className:'route-line'}).addTo(map);
-  }catch(e){console.error("Route error:",e);}
-}
-
-function findNearestReward(lat,lng){
-  let minDist=Infinity, nearest=null;
-  markers.forEach(m=>{
-    if(!unlockedIds.includes(m.id)){
-      const d=distance(lat,lng,m.getLatLng().lat,m.getLatLng().lng);
-      if(d<minDist){minDist=d; nearest=m;}
-    }
-  });
-  return {nearest, minDist};
-}
-
-function updateUserLocation(pos){
-  const lat=pos.coords.latitude, lng=pos.coords.longitude;
-  if(!userMarker){
-    userMarker=L.marker([lat,lng],{icon:L.divIcon({className:'user-marker'})}).addTo(map);
-    userCircle=L.circle([lat,lng],{radius:50,color:'#00e6b8',fillColor:'#00e6b8',fillOpacity:0.1}).addTo(map);
-    map.setView([lat,lng],15);
-    createRewards(20,{lat,lng});
-  } else {
-    userMarker.setLatLng([lat,lng]);
-    userCircle.setLatLng([lat,lng]);
-  }
-
-  const {nearest,minDist}=findNearestReward(lat,lng);
-  if(nearest && minDist<5000){ // کمتر از ۵ کیلومتر
-    drawRoute(lat,lng,nearest.getLatLng().lat,nearest.getLatLng().lng);
-  }
-
-  markers.forEach(marker=>{
-    if(!unlockedIds.includes(marker.id)){
-      const dist=distance(lat,lng,marker.getLatLng().lat,marker.getLatLng().lng);
-      if(dist<50){
-        marker.remove();
-        unlockedIds.push(marker.id);
-        localStorage.setItem("unlockedMarkers",JSON.stringify(unlockedIds));
-        document.getElementById("count").innerText=unlockedIds.length;
-        updateWithdrawState();
-        if(routeLine){map.removeLayer(routeLine);}
-        showModal("#modal");
-        if(unlockedIds.length>=10)setTimeout(()=>showModal("#winModal"),700);
-      }
-    }
-  });
-}
-
 function showModal(sel){
   const el=document.querySelector(sel);
   el.style.display='flex';
@@ -183,6 +115,45 @@ function updateWithdrawState(){
   } else {
     withdrawBtn.classList.add('btn-disabled');
     withdrawBtn.href='#';
+  }
+}
+
+function updateUserLocation(pos){
+  const lat=pos.coords.latitude, lng=pos.coords.longitude;
+  if(!userMarker){
+    userMarker=L.marker([lat,lng],{icon:L.divIcon({className:'user-marker'})}).addTo(map);
+    userCircle=L.circle([lat,lng],{radius:50,color:'#00e6b8',fillColor:'#00e6b8',fillOpacity:0.1}).addTo(map);
+    map.setView([lat,lng],15);
+    createRewards(6,{lat,lng});
+  } else {
+    userMarker.setLatLng([lat,lng]);
+    userCircle.setLatLng([lat,lng]);
+  }
+
+  // بررسی فاصله با جایزه‌ها
+  let closest = null, minDist = Infinity;
+  markers.forEach(marker=>{
+    const dist=distance(lat,lng,marker.getLatLng().lat,marker.getLatLng().lng);
+    if(dist<minDist){ minDist=dist; closest=marker; }
+
+    if(!unlockedIds.includes(marker.id) && dist<50){
+      marker.remove();
+      unlockedIds.push(marker.id);
+      localStorage.setItem("unlockedMarkers",JSON.stringify(unlockedIds));
+      document.getElementById("count").innerText=unlockedIds.length;
+      updateWithdrawState();
+      showModal("#modal");
+      if(unlockedIds.length>=10)setTimeout(()=>showModal("#winModal"),700);
+    }
+  });
+
+  // رسم مسیر اگر بین 100 تا 2000 متر باشه
+  if(closest && minDist>100 && minDist<2000){
+    const points=[ [lat,lng], [closest.getLatLng().lat, closest.getLatLng().lng] ];
+    if(routeLine) routeLine.remove();
+    routeLine = L.polyline(points,{color:'#0099ff',weight:6,opacity:0.9, dashArray:'10,6'}).addTo(map);
+  } else {
+    if(routeLine){ routeLine.remove(); routeLine=null; }
   }
 }
 
