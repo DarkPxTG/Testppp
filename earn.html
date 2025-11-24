@@ -1,0 +1,1178 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Ultimate Messenger UI (Realtime Active)</title>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+<script>
+  // **پیکربندی فایربیس شما**
+  const firebaseConfig = {
+    apiKey: "AIzaSyAxchyTNviRo9Fu0B8ar_wpWeIisdYfolI",
+    authDomain: "chat-c92db.firebaseapp.com",
+    projectId: "chat-c92db",
+    storageBucket: "chat-c92db.firebasestorage.app",
+    messagingSenderId: "1001733156664",
+    appId: "1:1001733156664:web:37601df09baa29cef01bcd",
+    measurementId: "G-T1FG1BW244"
+  };
+
+  // Initialize Firebase Variables
+  let app;
+  let auth;
+  let db; 
+  let currentUserID = null; // ID کاربر فعلی - پویا شد
+  let currentUsername = null; // نام کاربری فعلی
+  let currentChatListener = null; 
+  let activeChatData = null; // برای نگهداری اطلاعات چت فعال
+  
+  // شبیه‌سازی لیست کاربران چت برای تست تیک‌ها
+  const chatUsers = {
+      "news_channel_1": ["user_123", "user_456"],
+      "sarah_jones_2": ["user_123", "sarah_id"],
+      "dev_team_3": ["user_123", "user_b", "user_c"]
+  };
+  
+  // تابع شبیه‌سازی لاگین با نام کاربری/شماره و رمز (نیاز به سرور واقعی دارد)
+  function registerOrLogin(isRegister) {
+      const username = document.getElementById('auth-username').value;
+      const password = document.getElementById('auth-password').value;
+
+      if (!username || !password) {
+          showToast("نام کاربری و رمز عبور الزامی است.");
+          return;
+      }
+      
+      // شبیه‌سازی احراز هویت: در حالت واقعی، این قسمت با توکن جایگزین می‌شود
+      currentUserID = "user_" + username.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      currentUsername = username;
+      
+      // ذخیره در Local Storage برای ماندگاری لاگین (شبیه‌سازی)
+      localStorage.setItem('currentUser', JSON.stringify({
+          uid: currentUserID,
+          username: currentUsername,
+          password: password // فقط برای شبیه‌سازی
+      }));
+
+      // نمایش UI اصلی
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app-ui').style.display = 'flex';
+      
+      showToast(isRegister ? "ثبت نام و ورود با موفقیت انجام شد!" : "ورود با موفقیت انجام شد!");
+      initializeFirebase(); // پس از ورود، Firebase را Initialize می‌کنیم.
+      
+      // به‌روزرسانی نام در Drawer
+      document.getElementById('drawer-avatar-name').textContent = currentUsername || 'کاربر میهمان';
+      document.getElementById('drawer-avatar-phone').textContent = currentUserID;
+      document.getElementById('drawer-avatar').textContent = currentUsername ? currentUsername[0] : 'G';
+  }
+  
+  function showAuthScreen() {
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+          const user = JSON.parse(storedUser);
+          currentUserID = user.uid;
+          currentUsername = user.username;
+          
+          document.getElementById('auth-screen').style.display = 'none';
+          document.getElementById('app-ui').style.display = 'flex';
+          
+          // به‌روزرسانی نام در Drawer
+          document.getElementById('drawer-avatar-name').textContent = currentUsername;
+          document.getElementById('drawer-avatar-phone').textContent = currentUserID;
+          document.getElementById('drawer-avatar').textContent = currentUsername[0];
+          
+          initializeFirebase();
+      } else {
+          document.getElementById('auth-screen').style.display = 'flex';
+          document.getElementById('app-ui').style.display = 'none';
+      }
+  }
+
+  // Function to initialize all Firebase services
+  function initializeFirebase() {
+      if (!firebase.apps.length) {
+          app = firebase.initializeApp(firebaseConfig);
+      } else {
+          app = firebase.app();
+      }
+      
+      auth = firebase.auth();
+      db = firebase.firestore();
+
+      console.log(`Firebase Initialized. Current User: ${currentUserID}`);
+
+      // شبیه‌سازی لاگین با Anonymous Auth برای ساده‌سازی قوانین (اگر از Custom Auth استفاده نمی‌کنید)
+      if (currentUserID) {
+          // در اینجا باید Custom Token را بگیرید و لاگین کنید. برای سادگی، این مرحله را نادیده می‌گیریم.
+          // auth.signInWithCustomToken(token).then(...)
+      } else {
+          // اگر لاگین نشده، کاربر را به صفحه لاگین بفرستید.
+          showAuthScreen();
+          return;
+      }
+      
+      listenToUserChats();
+  }
+  
+  // Stubs for Firebase Chat Functions
+  function listenToUserChats() {
+      console.log("Listening to real-time chats list (function needs full implementation)...");
+      // در حالت واقعی، اینجا باید یک onSnapshot به کالکشن chats یا users/{uid}/chats اضافه شود.
+  }
+  
+  /**
+   * 📤 تابع ارسال پیام: پیام را به دیتابیس Firestore ارسال می‌کند.
+   */
+  function sendMessage(chatId, text) {
+      if (!db || !chatId || !text || !currentUserID) {
+          console.error("Cannot send message: DB, Chat ID/Text, or User ID is missing.");
+          return;
+      }
+
+      const message = {
+          senderId: currentUserID,
+          text: text,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(), // استفاده از سرور برای زمان
+          // **تغییر برای وضعیت دیده شدن:**
+          seenBy: [currentUserID] // ابتدا فقط فرستنده پیام را دیده است
+      };
+      
+      // 🚀 ارسال پیام فعال شد
+      db.collection('chats').doc(chatId).collection('messages').add(message)
+          .then(() => {
+              console.log(`Message sent successfully to chat ${chatId}`);
+              document.getElementById('chat-input').value = '';
+              updateSendButton();
+              // Scroll to bottom
+              const messagesContainer = document.getElementById('chat-messages-container');
+              messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          })
+          .catch(error => {
+              console.error("Error writing message to Firestore: ", error);
+          });
+  }
+
+  /**
+   * 👁️ به‌روزرسانی وضعیت دیده شدن پیام‌ها برای کاربر فعلی.
+   */
+  function updateMessageReadStatus(chatId, messageId) {
+      if (!db || !chatId || !messageId || !currentUserID) return;
+      
+      const messageRef = db.collection('chats').doc(chatId).collection('messages').doc(messageId);
+      
+      messageRef.update({
+          seenBy: firebase.firestore.FieldValue.arrayUnion(currentUserID)
+      }).then(() => {
+          // console.log(`Message ${messageId} marked as read by ${currentUserID}`);
+      }).catch(error => {
+          console.error("Error updating read status: ", error);
+      });
+  }
+  
+  /**
+   * 👂 گوش دادن به پیام‌های چت در Realtime.
+   */
+  function listenForChatMessages(chatId) {
+      // اگر لیسنر قبلی وجود دارد، آن را قطع کنید
+      if (currentChatListener) {
+          currentChatListener();
+      }
+
+      const messagesRef = db.collection('chats').doc(chatId).collection('messages').orderBy('timestamp', 'asc');
+      const container = document.getElementById('chat-messages-container');
+      container.innerHTML = ''; // پاک کردن پیام‌های قبلی
+
+      currentChatListener = messagesRef.onSnapshot(snapshot => {
+          snapshot.docChanges().forEach(change => {
+              const messageData = change.doc.data();
+              const messageId = change.doc.id;
+              
+              if (change.type === "added") {
+                  appendMessageToChat(messageId, messageData);
+                  // اگر پیام جدیدی اضافه شد و کاربر فعال آن را ندیده است، آن را به عنوان خوانده شده علامت بزن
+                  if (messageData.senderId !== currentUserID && !messageData.seenBy.includes(currentUserID)) {
+                      updateMessageReadStatus(chatId, messageId);
+                  }
+              }
+              
+              if (change.type === "modified") {
+                  // پیدا کردن و به‌روزرسانی پیام موجود
+                  const existingBubble = document.getElementById(`msg-${messageId}`);
+                  if (existingBubble) {
+                      updateMessageBubble(existingBubble, messageData);
+                  }
+              }
+          });
+          container.scrollTop = container.scrollHeight; // اسکرول به پایین
+      }, error => {
+          console.error("Error listening to messages:", error);
+      });
+  }
+  
+  function getReadStatusHtml(messageData) {
+      // تعداد کاربرانی که پیام را دیده‌اند
+      const seenCount = messageData.seenBy ? messageData.seenBy.length : 0;
+      
+      // شبیه‌سازی تعداد کل کاربران چت (نیاز به منطق واقعی دارد)
+      const totalUsers = chatUsers[activeChatData.chatId] ? chatUsers[activeChatData.chatId].length : 2; 
+
+      let ticksHtml = '';
+      if (messageData.senderId === currentUserID) {
+          if (seenCount === 1) {
+              // فقط من دیده‌ام
+              ticksHtml = `<div class="read-status single-tick">✓</div>`;
+          } else if (seenCount > 1 && seenCount < totalUsers) {
+              // بعضی از کاربران دیده‌اند (یک تیک کمرنگ + یک تیک پررنگ)
+              ticksHtml = `<div class="read-status double-tick-partial">✓✓</div>`;
+          } else if (seenCount >= totalUsers) {
+              // همه دیده‌اند (دو تیک پررنگ) - شبیه‌سازی حالت خوانده شدن کامل
+              ticksHtml = `<div class="read-status double-tick-full">✓✓</div>`;
+          }
+      } else {
+          // برای پیام‌هایی که من فرستنده نیستم، تیک دیده شدن نمایش داده نمی‌شود.
+          return '';
+      }
+      return ticksHtml;
+  }
+  
+  function updateMessageBubble(bubbleElement, messageData) {
+      const statusElement = bubbleElement.querySelector('.read-status-container');
+      if (statusElement) {
+          statusElement.innerHTML = getReadStatusHtml(messageData);
+      }
+  }
+  
+  function appendMessageToChat(messageId, data) {
+      const container = document.getElementById('chat-messages-container');
+      const isSent = data.senderId === currentUserID;
+      const timeString = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '...';
+      
+      const readStatusHtml = `<div class="read-status-container">${getReadStatusHtml(data)}</div>`;
+      
+      const bubble = document.createElement('div');
+      bubble.className = `chat-message-bubble ${isSent ? 'sent' : 'received'}`;
+      bubble.id = `msg-${messageId}`;
+      bubble.innerHTML = `
+          ${data.text}
+          <small>
+              ${timeString} 
+              ${isSent ? readStatusHtml : ''}
+          </small>
+      `;
+      
+      container.appendChild(bubble);
+  }
+
+  // Call initialization when the window loads
+  window.onload = showAuthScreen;
+
+</script>
+<style>
+  :root{
+    /* Light Theme (Telegram Blue) */
+    --bg-primary:#517da7;
+    --bg-surface:#ffffff;
+    --bg-content:#f3f4f6;
+    --color-text:#1f2326;
+    --color-muted:#9da9b3;
+    --color-accent:#4da3ff;
+    --color-red:#e74c3c;
+    --round:12px;
+    --shadow-subtle: 0 4px 12px rgba(0,0,0,0.1);
+    
+    /* Animation Speeds */
+    --transition-speed: 250ms;
+
+    /* Long Press Menu Shadow */
+    --menu-shadow: 0 8px 16px rgba(0,0,0,0.25);
+  }
+
+  /* Base Styles */
+  body {
+    background:var(--bg-content);
+    color: var(--color-text);
+  }
+  
+  html,body{
+    height:100%;margin:0;font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    overflow:hidden;touch-action:none;box-sizing:border-box;
+    -webkit-user-select: none; user-select: none;
+  }
+  .app {
+    height:100vh;width:100vw;display:flex;flex-direction:column;background:var(--bg-content);box-sizing:border-box;
+    position:relative;
+  }
+
+  /* **جدید: صفحه احراز هویت** */
+  .auth-screen {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg-primary); 
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: #fff; z-index: 300;
+  }
+  .auth-box {
+      background: var(--bg-surface);
+      padding: 30px; border-radius: var(--round);
+      box-shadow: var(--shadow-subtle);
+      width: 90%; max-width: 350px;
+      color: var(--color-text); text-align: center;
+  }
+  .auth-box h2 { color: var(--bg-primary); margin-top: 0; }
+  .auth-box input {
+      width: 100%; padding: 12px; margin-bottom: 15px;
+      border: 1px solid var(--bg-content); border-radius: 6px;
+      box-sizing: border-box; font-size: 16px;
+  }
+  .auth-box button {
+      width: 100%; padding: 12px; margin-top: 10px;
+      background: var(--color-accent); color: #fff;
+      border: none; border-radius: 6px; font-size: 16px;
+      cursor: pointer;
+  }
+
+  /* --- HEADER AREA --- */
+  .top {
+    background:var(--bg-primary);
+    color:#fff;
+    position:relative;
+    box-shadow: var(--shadow-subtle);
+    z-index: 100;
+    display: flex; flex-direction: column;
+    transition: all 250ms ease;
+  }
+
+  /* Top Row (Hamburger, Title, Search) */
+  .top-row-container {
+      position: relative;
+      height: 50px;
+      display: flex; align-items: center;
+      padding: 0 16px;
+  }
+
+  .top-row-normal {
+      width: 100%; display: flex; align-items: center; gap: 12px;
+      transition: opacity 200ms ease;
+  }
+  .top-row-normal.hidden { opacity: 0; pointer-events: none; display: none; }
+
+  /* Search Bar (Overlay) */
+  .search-bar-active {
+      width: 100%; display: none; align-items: center; gap: 12px;
+      animation: fadeIn 200ms ease;
+  }
+  .search-bar-active.visible { display: flex; }
+  
+  .search-input {
+      flex: 1; background: rgba(255,255,255,0.2); border: none; 
+      border-radius: 6px; padding: 6px 12px; color: #fff; font-size: 15px; outline: none;
+  }
+  .search-input::placeholder { color: rgba(255,255,255,0.7); }
+
+  .hamburger{ width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center; }
+  .hamburger svg path {fill: #fff;}
+  .title{flex:1;font-weight:600;font-size:18px;text-align:left;letter-spacing:0.4px;}
+  .search { width:22px;height:22px;opacity:0.95;cursor:pointer; }
+  
+  /* Stories (Restored to Original Clean Look) */
+  .stories {
+    margin-top: 4px; display:flex; gap:14px; align-items:center; overflow-x:scroll;
+    padding: 4px 16px 12px; 
+    /* Margins removed to fit perfectly inside .top */
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width: none;
+    transition: max-height 300ms ease, opacity 200ms ease, padding 300ms ease;
+    max-height: 100px; /* Approximate height */
+    opacity: 1;
+  }
+  .stories.collapsed {
+      max-height: 0; opacity: 0; padding: 0 16px; pointer-events: none;
+  }
+  .stories::-webkit-scrollbar { display: none; }
+
+  .story {display:flex;flex-direction:column;align-items:center;gap:4px;min-width:62px;}
+  
+  .story .ring {
+    width: 60px; height: 60px; 
+    border-radius: 50%;
+    /* Telegram Gradient */
+    background: linear-gradient(180deg, #3390ec, #00e5ff); 
+    padding: 2px; 
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 150ms ease;
+  }
+  .story .ring:active { transform: scale(0.95); }
+
+  .story .avatar {
+    width: 100%; height: 100%; border-radius: 50%;
+    background: var(--bg-primary); /* Blend with header if transparent, or specific color */
+    border: 2px solid var(--bg-primary); /* Creates the gap */
+    box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; color: #fff; font-size: 20px;
+    /* Use an inner element for image/color to avoid border issues */
+    position: relative;
+    background-color: var(--bg-content); color: #555;
+  }
+
+  .story small{font-size:11px;color:#fff; margin-top: 2px;}
+
+  /* Tabs */
+  .tabs {
+    display:flex;gap:8px;margin-top:0;align-items:center;justify-content:left;
+    padding: 0 16px 10px; /* Padding bottom for spacing */
+    transition: max-height 300ms ease, opacity 200ms ease, padding 300ms ease;
+    max-height: 50px; opacity: 1;
+  }
+  .tabs.collapsed {
+      max-height: 0; opacity: 0; padding: 0 16px; pointer-events: none;
+  }
+  .tab{
+    background:rgba(255,255,255,0.15);padding:6px 12px;border-radius:999px;
+    color:#fff;font-weight:500;font-size:13px;cursor:pointer;
+  }
+  .tab.active{background:#fff;color:var(--bg-primary);box-shadow: 0 4px 10px rgba(0,0,0,0.1)}
+
+  /* Content List */
+  .content {
+    flex:1;overflow-y:auto;padding:12px;padding-bottom:100px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .list {display:flex;flex-direction:column;gap:10px;}
+  
+  .item {
+    background:var(--bg-surface);border-radius:var(--round);display:flex;align-items:center;gap:12px;
+    padding:12px;box-shadow: 0 1px 4px rgba(0,0,0,0.05);position:relative;overflow: hidden;
+    transition: all 300ms ease;
+    cursor: pointer; /* اضافه شده برای نشان دادن قابل کلیک بودن */
+  }
+  .item.hidden-search { display: none !important; }
+  .item:active {background: var(--bg-content);}
+  .item .left {
+    width:56px;height:56px;border-radius:var(--round);flex:0 0 56px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,#fff,#f8f8f8);box-shadow: inset 0 -6px 10px rgba(0,0,0,0.02);
+    font-size: 20px; font-weight: 700; color: #555;
+  }
+  .item .body{flex:1;min-width:0;text-align:left;}
+  .item .body .row1{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .name{font-weight:600;font-size:16px;}
+  .muted-text{color:var(--color-muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .time{font-size:12px;color:var(--color-muted);flex-shrink:0}
+  
+  /* Right Icon / Badge / Pin */
+  .icon-right-container {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+  }
+  .badge{
+    min-width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:#e0e7ed;color:#555;font-weight:600;flex-shrink:0;font-size:12px; padding: 0 4px;
+  }
+  .badge.primary { background: var(--color-accent); color: #fff; }
+  .badge.muted { background: var(--color-muted); color: #fff; opacity: 0.7; }
+  
+  .pin-icon { width: 14px; height: 14px; fill: var(--color-muted); display: none; transform: rotate(45deg); }
+  /* Pinned State Styles */
+  .item.pinned .pin-icon { display: block; fill: var(--bg-primary); }
+  .item.pinned { background: #f8fbff; border-left: 3px solid var(--bg-primary); }
+
+  /* Chat View (Fixed) */
+  .chat-view {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg-content); display: flex; flex-direction: column;
+    transform: translateX(100%); 
+    z-index: 120;
+    transition: transform var(--transition-speed) cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .chat-view.active { transform: translateX(0); }
+
+  .chat-header {
+    background: var(--bg-primary); padding: 8px 16px; color: #fff;
+    display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex-shrink: 0;
+  }
+  .chat-header .back-btn svg path, .chat-header .more-chat-options svg path { fill: #fff; }
+  .chat-header .chat-avatar { width: 40px; height: 40px; border-radius: 50%; background: #fff; font-weight: 700; color: #555; flex-shrink: 0; display: flex; justify-content: center; align-items: center;}
+  .chat-header .chat-name { font-weight: 600; font-size: 17px; }
+  .chat-header .chat-status { font-size: 11px; color: rgba(255,255,255,0.8); }
+
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;
+    padding-bottom: 80px; 
+    background: var(--bg-content); 
+  }
+  .chat-message-bubble {
+    max-width: 80%; padding: 10px 14px; border-radius: 18px;
+    background: var(--bg-surface); box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    align-self: flex-start; text-align: left;
+    /* RTL adjustments */
+    text-align: right;
+  }
+  .chat-message-bubble.sent {
+    background: #d1eaff; 
+    align-self: flex-end;
+  }
+  .chat-message-bubble small {
+    display: flex; font-size: 10px; color: var(--color-muted); margin-top: 4px; 
+    justify-content: flex-end; align-items: center; gap: 4px;
+  }
+
+  /* **تغییر برای تیک‌های دیده شدن** */
+  .read-status-container {
+      display: inline-flex;
+      align-items: center;
+      /* RTL */
+      margin-right: 4px;
+      margin-left: 0;
+  }
+  .read-status {
+      font-size: 14px; /* برای ✓ بزرگتر */
+      line-height: 1;
+      height: 10px;
+      /* single-tick: خاکستری کمرنگ */
+      color: var(--color-muted); 
+      margin-left: -4px; /* برای چسبیدن تیک‌ها */
+  }
+  /* double-tick-partial: دو تیک کمرنگ */
+  .double-tick-partial {
+      color: var(--color-muted);
+      opacity: 0.7;
+  }
+  /* double-tick-full: دو تیک آبی/پررنگ */
+  .double-tick-full {
+      color: var(--color-accent); 
+      font-weight: 600;
+  }
+
+  /* Message Input Bar */
+  .message-bar {
+    position:fixed; bottom:0; right:0; left:0;
+    background:var(--bg-surface); padding:8px 12px;
+    display:flex; align-items:flex-end; gap:8px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+    transform: translateY(100%); 
+    z-index: 130; 
+    transition: transform var(--transition-speed) ease-out;
+  }
+  .message-bar.active { transform: translateY(0); }
+  
+  .message-input-container {
+      flex: 1; display: flex; align-items: center;
+      background: var(--bg-content); border-radius: 22px;
+      padding: 0 10px;
+  }
+  .message-bar input {
+    flex:1; padding:10px 0; border:none;
+    background:transparent; font-size:15px; color: var(--color-text);
+  }
+  .message-bar input:focus { outline: none; }
+  .attach-btn, .emoji-btn {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+  }
+  .attach-btn svg { transform: rotate(135deg); }
+  .attach-btn svg path, .emoji-btn svg path { fill: var(--color-muted); }
+
+  .message-bar button {
+    background:var(--color-accent); color:#fff; border:none;
+    width:40px;height:40px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px; cursor:pointer; flex-shrink: 0;
+    transition: background 150ms ease;
+  }
+
+  /* Floating Compose Button */
+  .compose{
+    position:fixed; right:24px; bottom:24px;
+    width:56px;height:56px;border-radius:50%;
+    background:var(--color-accent);display:flex;align-items:center;justify-content:center;
+    box-shadow: 0 8px 18px rgba(77,163,255,0.35);
+    cursor:pointer; z-index: 95;
+    transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
+  }
+  .compose svg path {fill: #fff;}
+
+  /* Drawer (Sidebar) */
+  .drawer-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); 
+    z-index: 200; 
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--transition-speed) ease;
+  }
+  .drawer-overlay.active { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; left: 0; width: 80%; max-width: 300px; height: 100%;
+    background: var(--bg-primary); 
+    z-index: 210; 
+    transform: translateX(-100%);
+    transition: transform var(--transition-speed) ease;
+    box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+    display: flex; flex-direction: column;
+    color: #fff;
+  }
+  .drawer.active { transform: translateX(0); }
+  .drawer-header {
+    padding: 24px 16px 16px; border-bottom: 1px solid rgba(255,255,255,0.2);
+  }
+  .drawer-avatar {
+    width: 64px; height: 64px; border-radius: 50%; background: #fff;
+    font-size: 24px; font-weight: 700; color: #555;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+  }
+  .drawer-avatar-name { font-size: 18px; font-weight: 600; }
+  .drawer-avatar-phone { font-size: 13px; color: rgba(255,255,255,0.8); }
+
+  .drawer-menu {
+    flex: 1; overflow-y: auto; padding: 8px 0;
+  }
+  .drawer-item {
+    padding: 12px 16px; display: flex; align-items: center; gap: 16px;
+    font-size: 16px; font-weight: 500; cursor: pointer;
+    transition: background 150ms ease;
+  }
+  .drawer-item:hover { background: rgba(255,255,255,0.1); }
+  .drawer-item svg { width: 24px; height: 24px; fill: #fff; }
+
+  /* --- Long Press Context Menu --- */
+  .long-press-menu {
+    position: fixed; top: 50%; left: 50%; 
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+    background: var(--bg-surface);
+    border-radius: var(--round);
+    padding: 8px 0;
+    min-width: 200px;
+    z-index: 250; /* Top most */
+    box-shadow: var(--menu-shadow);
+    transition: all 150ms ease-out;
+    pointer-events: none;
+  }
+
+  .long-press-menu.active {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+  }
+
+  .long-press-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--color-text);
+    transition: background 100ms ease;
+  }
+  .long-press-item:hover {
+    background: var(--bg-content);
+  }
+  .long-press-item svg {
+    width: 20px; height: 20px;
+    fill: var(--color-muted);
+  }
+  .long-press-item.delete {
+    color: var(--color-red);
+  }
+  .long-press-item.delete svg {
+    fill: var(--color-red);
+  }
+  .long-press-menu-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 240;
+    pointer-events: none; 
+  }
+  
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+</style>
+</head>
+<body class="light-theme">
+
+<div class="auth-screen" id="auth-screen">
+    <div class="auth-box">
+        <h2>ورود/ثبت نام</h2>
+        <input type="text" id="auth-username" placeholder="نام کاربری یا شماره تلفن">
+        <input type="password" id="auth-password" placeholder="رمز عبور">
+        <button onclick="registerOrLogin(true)">ثبت نام و ورود</button>
+        <button style="background: #ccc; color: var(--color-text);" onclick="registerOrLogin(false)">ورود</button>
+        <p style="font-size: 12px; color: var(--color-muted); margin-top: 20px;">
+            <span style="color: var(--color-red);">توجه:</span> این بخش شبیه‌سازی لاگین سفارشی است. در حالت واقعی نیاز به سرور واسط دارید.
+        </p>
+    </div>
+</div>
+
+<div class="app" role="application" aria-label="Messenger UI" id="app-ui">
+  
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <div class="drawer-avatar" id="drawer-avatar">G</div>
+      <div class="drawer-avatar-name" id="drawer-avatar-name">کاربر میهمان</div>
+      <div class="drawer-avatar-phone" id="drawer-avatar-phone">لطفا وارد شوید</div>
+    </div>
+    <div class="drawer-menu">
+      <div class="drawer-item" onclick="flash('New Group')">
+        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-4 0c1.66 0 2.99-1.34 2.99-3S13.66 5 12 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm6.5 4H19v6h-2v-4h-2.5c-.34 0-.67.04-1 .11V15c-1.37-.56-2.92-.89-4.5-.89s-3.13.33-4.5.89v1.11c-.33-.07-.66-.11-1-.11H5v4H3v-6h1.5A3.5 3.5 0 018 11.5V11c0-1.66 1.34-3 3-3h2c1.66 0 3 1.34 3 3v.5a3.5 3.5 0 013.5 3.5z"/></svg>
+        <span>New Group</span>
+      </div>
+      <div class="drawer-item" onclick="flash('Contacts')">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <span>Contacts</span>
+      </div>
+      <div class="drawer-item" onclick="logoutUser()" style="margin-top: 20px; color: var(--color-red);">
+        <svg viewBox="0 0 24 24" style="fill: var(--color-red);"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+        <span>خروج</span>
+      </div>
+    </div>
+  </div>
+
+  <header class="top" role="banner" id="main-header">
+    <div class="top-row-container">
+        <div class="top-row-normal" id="top-row-normal">
+            <div class="hamburger clickable" title="Menu" onclick="openDrawer()">
+                <svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            </div>
+            <div class="title">Chats</div>
+            <svg class="search clickable" viewBox="0 0 24 24" onclick="toggleSearchBar(true)" width="24" height="24" style="fill: #fff;">
+                <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79L20 21.5 21.5 20l-6-6z"/>
+            </svg>
+        </div>
+        
+        <div class="search-bar-active" id="search-bar-active">
+             <div class="hamburger clickable" onclick="toggleSearchBar(false)">
+                <svg width="24" height="24" viewBox="0 0 24 24"><path fill="#fff" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+             </div>
+             <input type="text" class="search-input" id="search-input" placeholder="Search chats..." oninput="filterChats(this.value)">
+        </div>
+    </div>
+
+    <div class="stories" aria-hidden="false" id="stories-section">
+      <div class="story clickable" onclick="flash('Story: My Story')">
+        <div class="ring">
+            <div class="avatar" style="background: #517da7; color: #fff;">+</div>
+        </div>
+        <small>My Story</small>
+      </div>
+      <div class="story clickable" onclick="flash('Story: Elon')">
+        <div class="ring"><div class="avatar" style="background: #e0e7ed;">E</div></div>
+        <small>Elon Musk</small>
+      </div>
+      <div class="story clickable" onclick="flash('Story: Group')">
+        <div class="ring"><div class="avatar" style="background: #e0e7ed;">G</div></div>
+        <small>Project X</small>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Tabs" id="tabs-section">
+      <div class="tab active clickable" onclick="selectTab(this)">All</div>
+      <div class="tab clickable" onclick="selectTab(this)">Work</div>
+      <div class="tab clickable" onclick="selectTab(this)">Unread</div>
+      <div class="tab clickable" onclick="selectTab(this)">Bots</div>
+    </div>
+  </header>
+
+  <div class="content-wrapper" style="flex: 1; position: relative;">
+    <main class="content" role="main" id="main-content-list">
+      <section class="list" id="chats" aria-label="Chat List">
+        
+        <article class="item pinned" 
+                 data-name="News Channel" 
+                 data-avatar="N"
+                 data-chat-id="news_channel_1"
+                 data-pinned="true"
+                 onmousedown="startPress(this, 'Global News', {name:'Global News', avatar:'N', status:'Channel • 1.2M subs', isPinned: true, chatId: 'news_channel_1'})"
+                 ontouchstart="startPress(this, 'Global News', {name:'Global News', avatar:'N', status:'Channel • 1.2M subs', isPinned: true, chatId: 'news_channel_1'})"
+                 onmouseup="cancelPress()"
+                 ontouchend="cancelPress()"
+                 onmousemove="cancelPress(true)"
+                 ontouchmove="cancelPress(true)">
+          <div class="left" style="background:linear-gradient(135deg,#ffaa00,#ffe080); color: #fff;">N</div>
+          <div class="body">
+            <div class="row1">
+              <div class="name">Global News</div>
+              <div class="time">NOW</div>
+            </div>
+            <div class="row2 muted-text">Latest breaking news summary...</div>
+          </div>
+          <div class="icon-right-container">
+             <div class="badge muted">X</div>
+             <svg class="pin-icon" viewBox="0 0 24 24"><path d="M16 12V4H8v8l-2 2v2h6v6h4v-6h6v-2l-2-2z"/></svg>
+          </div>
+        </article>
+
+        <article class="item" 
+                 data-name="Sarah Jones" 
+                 data-avatar="S"
+                 data-chat-id="sarah_jones_2"
+                 data-pinned="false"
+                 onmousedown="startPress(this, 'Sarah Jones', {name:'Sarah Jones', avatar:'S', status:'online', chatId: 'sarah_jones_2'})"
+                 ontouchstart="startPress(this, 'Sarah Jones', {name:'Sarah Jones', avatar:'S', status:'online', chatId: 'sarah_jones_2'})"
+                 onmouseup="cancelPress()"
+                 ontouchend="cancelPress()"
+                 onmousemove="cancelPress(true)"
+                 ontouchmove="cancelPress(true)">
+          <div class="left" style="background:linear-gradient(135deg,#ffdfd9,#ffbfb0); color: #c43a3a;">S</div>
+          <div class="body">
+            <div class="row1">
+              <div class="name">Sarah Jones</div>
+              <div class="time">10:45 AM</div>
+            </div>
+            <div class="row2 muted-text">I sent the files.</div>
+          </div>
+          <div class="icon-right-container">
+            <div class="badge primary">3</div>
+            <svg class="pin-icon" viewBox="0 0 24 24"><path d="M16 12V4H8v8l-2 2v2h6v6h4v-6h6v-2l-2-2z"/></svg>
+          </div>
+        </article>
+
+        <article class="item" 
+                 data-name="Dev Team" 
+                 data-avatar="DT"
+                 data-chat-id="dev_team_3"
+                 data-pinned="false"
+                 onmousedown="startPress(this, 'Development Team', {name:'Development Team', avatar:'DT', status:'Group • 12 members', chatId: 'dev_team_3'})"
+                 ontouchstart="startPress(this, 'Development Team', {name:'Development Team', avatar:'DT', status:'Group • 12 members', chatId: 'dev_team_3'})"
+                 onmouseup="cancelPress()"
+                 ontouchend="cancelPress()"
+                 onmousemove="cancelPress(true)"
+                 ontouchmove="cancelPress(true)">
+          <div class="left" style="background:linear-gradient(135deg,#cceaff,#99ccff); color: #36a5ff;">DT</div>
+          <div class="body">
+            <div class="row1">
+              <div class="name">Development Team</div>
+              <div class="time">YESTERDAY</div>
+            </div>
+            <div class="row2 muted-text">New features merged!</div>
+          </div>
+          <div class="icon-right-container">
+            <div class="badge" style="background: transparent;"></div>
+            <svg class="pin-icon" viewBox="0 0 24 24"><path d="M16 12V4H8v8l-2 2v2h6v6h4v-6h6v-2l-2-2z"/></svg>
+          </div>
+        </article>
+
+      </section>
+    </main>
+
+    <div class="chat-view" id="chat-view">
+      <div class="chat-header">
+        <div class="back-btn clickable" onclick="hideChatView()">
+            <svg width="24" height="24" viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+        </div>
+        <div class="chat-avatar" id="chat-avatar-placeholder"></div>
+        <div class="chat-info">
+          <div class="chat-name" id="chat-name-placeholder"></div>
+          <div class="chat-status" id="chat-status-placeholder"></div>
+        </div>
+        <svg class="search clickable" viewBox="0 0 24 24" onclick="flash('Chat Search')" width="24" height="24" style="fill: #fff; margin-left: auto; opacity: 0.9;">
+            <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79L20 21.5 21.5 20l-6-6z"/>
+        </svg>
+        <svg class="more-chat-options clickable" viewBox="0 0 24 24" onclick="flash('Chat Options')" width="24" height="24" style="fill: #fff; margin-left: 8px; opacity: 0.9;">
+            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      </div>
+
+      <div class="chat-messages" id="chat-messages-container">
+        </div>
+    </div>
+  </div>
+
+  <div class="long-press-menu-overlay" id="long-press-menu-overlay" onclick="closeLongPressMenu()"></div>
+  <div class="long-press-menu" id="long-press-menu">
+      <div class="long-press-item" onclick="handleMenuAction('Pin')">
+          <svg viewBox="0 0 24 24"><path d="M17 4v7l-5 3-5-3V4h10m0 16c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zM19 2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+          <span id="pin-text">Pin/Unpin</span>
+      </div>
+      <div class="long-press-item" onclick="handleMenuAction('Mute')">
+          <svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03V11.5c0 .28-.22.5-.5.5s-.5-.22-.5-.5v-3.53C11.52 8.71 10.5 10.23 10.5 12c0 1.77 1.02 3.29 2.5 4.03V11.5c0-.28.22-.5.5-.5s.5.22.5.5v3.53c1.48-.74 2.5-2.26 2.5-4.03zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+          <span>Mute/Unmute</span>
+      </div>
+      <div class="long-press-item" onclick="handleMenuAction('Archive')">
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2zM5 5v14h14V5H5zM12 11h-2v2h2v-2zM12 15h-2v2h2v-2zM12 7h-2v2h2V7z"/></svg>
+          <span>Archive</span>
+      </div>
+      <div class="long-press-item delete" onclick="handleMenuAction('Delete')">
+          <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.3l1.08 1.08 2.46-2.46 2.46 2.46 1.08-1.08-2.46-2.46 2.46-2.46-1.08-1.08-2.46 2.46-2.46-2.46-1.08 1.08 2.46 2.46-2.46 2.46zM15.5 4l-.5-.5h-5l-.5.5H5v2h14V4h-3.5z"/></svg>
+          <span>Delete Chat</span>
+      </div>
+  </div>
+
+  <div class="compose clickable" title="New Message" onclick="flash('Compose')">
+    <svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+  </div>
+
+  <div class="message-bar" id="message-bar">
+    <div class="message-input-container">
+        <div class="attach-btn clickable" onclick="flash('Attach File')">
+            <svg width="20" height="20" viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.48-2.02 4.5-4.5 4.5s-4.5-2.02-4.5-4.5V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V6h1.5z"/></svg>
+        </div>
+        <input type="text" id="chat-input" placeholder="Message..." onfocus="flash('Typing')" oninput="updateSendButton()" onkeydown="handleChatInput(event, activeChatData.chatId)">
+        <div class="emoji-btn clickable" onclick="flash('Emoji Picker')">
+            <svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm6 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-4-7c-2.33 0-4.32 1.35-5.22 3.28.18 1.83 1.93 3.22 4.22 3.22s4.04-1.39 4.22-3.22C16.32 10.35 14.33 9 12 9z"/></svg>
+        </div>
+    </div>
+    <button id="voice-send-btn" onclick="sendOrRecord()">
+        <svg id="mic-icon" width="20" height="20" viewBox="0 0 24 24"><path fill="#fff" d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-2c0 3.97-3.32 7.2-7.3 7.2S4.7 15.97 4.7 12H3c0 4.2 3.4 7.6 7.72 8.15V23h2.56v-2.85c4.32-.55 7.72-3.95 7.72-8.15h-1.72z"/></svg>
+        <svg id="send-icon" style="display:none;" width="20" height="20" viewBox="0 0 24 24"><path fill="#fff" d="M2.01 21L23 12 2.01 3v6l15 3-15 3z"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  let isChatOpen = false;
+  let isRecording = false;
+  let isDrawerOpen = false;
+  
+  // Long Press Variables
+  let pressTimer = null;
+  let activeItem = null;
+  let isLongPressActive = false;
+  
+  function showToast(message) {
+      console.log('TOAST:', message);
+  }
+
+  // **تابع خروج**
+  function logoutUser() {
+      localStorage.removeItem('currentUser');
+      currentUserID = null;
+      currentUsername = null;
+      if (currentChatListener) currentChatListener();
+      
+      // auth.signOut() // در حالت واقعی
+      
+      showToast("شما از حساب کاربری خارج شدید.");
+      showAuthScreen();
+  }
+
+  // --- Search Logic ---
+  function toggleSearchBar(show) {
+      const topRowNormal = document.getElementById('top-row-normal');
+      const searchBarActive = document.getElementById('search-bar-active');
+      const searchInput = document.getElementById('search-input');
+      const stories = document.getElementById('stories-section');
+      const tabs = document.getElementById('tabs-section');
+      
+      if (show) {
+          topRowNormal.classList.add('hidden');
+          searchBarActive.classList.add('visible');
+          
+          stories.classList.add('collapsed');
+          tabs.classList.add('collapsed');
+
+          searchInput.focus();
+      } else {
+          topRowNormal.classList.remove('hidden');
+          searchBarActive.classList.remove('visible');
+          
+          stories.classList.remove('collapsed');
+          tabs.classList.remove('collapsed');
+
+          searchInput.value = '';
+          filterChats(''); 
+      }
+  }
+
+  function filterChats(query) {
+      const items = document.querySelectorAll('.item');
+      const q = query.toLowerCase();
+      
+      items.forEach(item => {
+          const name = item.getAttribute('data-name').toLowerCase();
+          if (name.includes(q)) {
+              item.classList.remove('hidden-search');
+          } else {
+              item.classList.add('hidden-search');
+          }
+      });
+  }
+
+  // --- Long Press/Click Logic (اصلاح شده) ---
+  function startPress(item, chatName, chatData) {
+      if (!currentUserID) {
+          showToast("لطفا ابتدا وارد شوید.");
+          return;
+      }
+      // Clear any pending timer
+      clearTimeout(pressTimer); 
+      activeItem = item;
+      activeChatData = chatData;
+      isLongPressActive = false; 
+
+      pressTimer = setTimeout(() => {
+          handleItemLongPress(item, chatName, chatData);
+          isLongPressActive = true; 
+      }, 500);
+      
+      item.onclick = function(e) { 
+          if (pressTimer) {
+              clearTimeout(pressTimer);
+              pressTimer = null;
+          }
+          if (!isLongPressActive) {
+              openChat(chatData); 
+          }
+          item.onclick = null; 
+          e.stopPropagation();
+      };
+  }
+
+  function cancelPress(isMove = false) {
+      if (isMove) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+          if (activeItem) { activeItem.onclick = null; } 
+          isLongPressActive = false;
+          return;
+      }
+      
+      if (isLongPressActive) {
+          // Keep menu open until overlay click
+      } else {
+          // If a short click occurred, let the onclick handler fire
+      }
+  }
+  
+  function handleItemLongPress(item, chatName, chatData) {
+      // Logic for showing the long press menu (unchanged)
+      const menu = document.getElementById('long-press-menu');
+      const overlay = document.getElementById('long-press-menu-overlay');
+
+      // Update Pin/Unpin text
+      const isPinned = item.classList.contains('pinned');
+      document.getElementById('pin-text').textContent = isPinned ? 'Unpin Chat' : 'Pin Chat';
+
+      // For simplicity, we just show it in the center
+      menu.classList.add('active');
+      overlay.classList.add('active');
+  }
+
+  function handleMenuAction(action) {
+      flash(action + ' performed on ' + activeChatData.name);
+      closeLongPressMenu();
+      if (action === 'Pin' || action === 'Unpin') {
+          activeItem.classList.toggle('pinned');
+      }
+  }
+
+  function closeLongPressMenu() {
+      document.getElementById('long-press-menu').classList.remove('active');
+      document.getElementById('long-press-menu-overlay').classList.remove('active');
+      activeItem = null;
+      activeChatData = null;
+      isLongPressActive = false;
+  }
+
+  // --- Main App Logic ---
+
+  function flash(message) {
+    showToast(message);
+  }
+  
+  function selectTab(tabElement) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tabElement.classList.add('active');
+      flash(`Selected tab: ${tabElement.textContent}`);
+      // Filter logic here
+  }
+
+  function openDrawer() {
+      document.getElementById('drawer-overlay').classList.add('active');
+      document.getElementById('drawer').classList.add('active');
+      isDrawerOpen = true;
+  }
+
+  function closeDrawer() {
+      document.getElementById('drawer-overlay').classList.remove('active');
+      document.getElementById('drawer').classList.remove('active');
+      isDrawerOpen = false;
+  }
+
+  function openChat(chatData) {
+      if (!currentUserID) return;
+      
+      activeChatData = chatData;
+      isChatOpen = true;
+      
+      // Populate chat header
+      document.getElementById('chat-name-placeholder').textContent = chatData.name;
+      document.getElementById('chat-status-placeholder').textContent = chatData.status || '';
+      document.getElementById('chat-avatar-placeholder').textContent = chatData.avatar || chatData.name[0];
+      
+      // Show chat view and message bar
+      document.getElementById('chat-view').classList.add('active');
+      document.getElementById('message-bar').classList.add('active');
+      document.querySelector('.compose').style.opacity = '0';
+      
+      // Start listening to messages
+      if (activeChatData.chatId) {
+          listenForChatMessages(activeChatData.chatId);
+      }
+  }
+
+  function hideChatView() {
+      isChatOpen = false;
+      
+      // Hide chat view and message bar
+      document.getElementById('chat-view').classList.remove('active');
+      document.getElementById('message-bar').classList.remove('active');
+      document.querySelector('.compose').style.opacity = '1';
+
+      // Stop listening to messages
+      if (currentChatListener) {
+          currentChatListener();
+          currentChatListener = null;
+      }
+      activeChatData = null;
+  }
+  
+  function updateSendButton() {
+      const input = document.getElementById('chat-input');
+      const micIcon = document.getElementById('mic-icon');
+      const sendIcon = document.getElementById('send-icon');
+      
+      if (input.value.trim().length > 0) {
+          micIcon.style.display = 'none';
+          sendIcon.style.display = 'block';
+      } else {
+          micIcon.style.display = 'block';
+          sendIcon.style.display = 'none';
+      }
+  }
+
+  function sendOrRecord() {
+      const input = document.getElementById('chat-input');
+      
+      if (input.value.trim().length > 0) {
+          // Send Message
+          if (activeChatData && activeChatData.chatId) {
+              sendMessage(activeChatData.chatId, input.value.trim());
+          } else {
+              flash('Error: No active chat selected.');
+          }
+      } else {
+          // Voice Record
+          if (isRecording) {
+              flash('Stopped Recording');
+              isRecording = false;
+              // Add mic/record stop logic here
+          } else {
+              flash('Started Recording');
+              isRecording = true;
+              // Add mic/record start logic here
+          }
+      }
+  }
+  
+  function handleChatInput(event, chatId) {
+      if (event.key === 'Enter' && document.getElementById('chat-input').value.trim().length > 0) {
+          sendOrRecord();
+          event.preventDefault(); // Prevent new line in input
+      }
+  }
+</script>
+</body>
+</html>
